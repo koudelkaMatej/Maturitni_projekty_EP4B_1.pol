@@ -1,0 +1,261 @@
+import turtle
+import time
+import random
+import sqlite3
+from datetime import datetime
+
+# === Nastavení databáze ===
+def vytvor_databazi():
+    conn = sqlite3.connect('snake_game.db')
+    c = conn.cursor()
+    c.execute('''CREATE TABLE IF NOT EXISTS hry
+                 (id INTEGER PRIMARY KEY AUTOINCREMENT,
+                  skore INTEGER,
+                  datum TEXT)''')
+    conn.commit()
+    conn.close()
+
+def uloz_skore(skore):
+    conn = sqlite3.connect('snake_game.db')
+    c = conn.cursor()
+    c.execute("INSERT INTO hry (skore, datum) VALUES (?, ?)",
+              (skore, datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+    conn.commit()
+    conn.close()
+
+def nacti_high_score():
+    conn = sqlite3.connect('snake_game.db')
+    c = conn.cursor()
+    c.execute("SELECT MAX(skore) FROM hry")
+    vysledek = c.fetchone()[0]
+    conn.close()
+    return vysledek if vysledek else 0
+
+# Vytvoříme databázi při spuštění
+vytvor_databazi()
+
+# === Nastavení hlavního okna ===
+okno = turtle.Screen()
+okno.title("Hadí hra")
+okno.bgcolor("tan")
+okno.setup(width=600, height=600)
+okno.tracer(0)
+
+# === Hlavní proměnné ===
+hra_bezi = False
+skore = 0
+high_score = nacti_high_score()
+
+# === Skóre display ===
+skore_text = turtle.Turtle()
+skore_text.speed(0)
+skore_text.color("darkgreen")
+skore_text.penup()
+skore_text.hideturtle()
+skore_text.goto(0, 260)
+
+# === Funkce pro spuštění hry ===
+def spustit_hru():
+    global hra_bezi, skore
+    hra_bezi = True
+    skore = 0
+    menu_napis.clear()
+    tlacitko.clear()
+    tlacitko_text.clear()
+    high_score_text.clear()
+    hra()
+
+# === Menu ===
+menu_napis = turtle.Turtle()
+menu_napis.hideturtle()
+menu_napis.penup()
+menu_napis.goto(0, 100)
+menu_napis.color("darkgreen")
+menu_napis.write("🐍 Vítej ve hře Had! 🐍", align="center", font=("Arial", 28, "bold"))
+
+# High score v menu
+high_score_text = turtle.Turtle()
+high_score_text.hideturtle()
+high_score_text.penup()
+high_score_text.goto(0, 30)
+high_score_text.color("darkgreen")
+high_score_text.write(f"High Score: {high_score}", align="center", font=("Arial", 18, "normal"))
+
+# === Tlačítko START (vycentrované) ===
+tlacitko = turtle.Turtle()
+tlacitko.hideturtle()
+tlacitko.penup()
+tlacitko.goto(-60, -70)  # Posunuto doleva, aby bylo středově
+tlacitko.color("darkgreen")
+tlacitko.pensize(3)
+tlacitko.pendown()
+tlacitko.begin_fill()
+tlacitko.fillcolor("lightgreen")
+for _ in range(2):
+    tlacitko.forward(120)
+    tlacitko.left(90)
+    tlacitko.forward(50)
+    tlacitko.left(90)
+tlacitko.end_fill()
+tlacitko.penup()
+
+# Text na tlačítku (vycentrovaný)
+tlacitko_text = turtle.Turtle()
+tlacitko_text.hideturtle()
+tlacitko_text.penup()
+tlacitko_text.goto(0, -55)  # Přesně na střed tlačítka
+tlacitko_text.color("darkgreen")
+tlacitko_text.write("START", align="center", font=("Arial", 18, "bold"))
+
+# Funkce pro detekci kliknutí na tlačítko (opravené souřadnice)
+def klik_na_tlacitko(x, y):
+    if not hra_bezi:
+        if -60 <= x <= 60 and -70 <= y <= -20:
+            spustit_hru()
+
+okno.listen()
+okno.onclick(klik_na_tlacitko)
+
+# === Herní funkce ===
+def hra():
+    global skore, high_score, hra_bezi
+    
+    # === Had - hlava ===
+    hlava = turtle.Turtle()
+    hlava.speed(0)
+    hlava.shape("square")
+    hlava.color("darkgreen")
+    hlava.penup()
+    hlava.goto(0, 0)
+    hlava.direction = "stop"
+
+    # === Had - tělo ===
+    telo = []
+
+    # === Jídlo ===
+    jidlo = turtle.Turtle()
+    jidlo.speed(0)
+    jidlo.shape("circle")
+    jidlo.color("red")
+    jidlo.penup()
+    jidlo.goto(0, 100)
+
+    # === Rychlost hry (nižší = rychlejší, plynulejší) ===
+    rychlost = 0.08
+
+    # === Funkce pro update skóre ===
+    def update_skore():
+        skore_text.clear()
+        skore_text.write(f"Skóre: {skore}  High Score: {high_score}", 
+                        align="center", font=("Arial", 16, "normal"))
+
+    update_skore()
+
+    # === Pohyb ===
+    def jdi_nahoru():
+        if hlava.direction != "dolu":
+            hlava.direction = "nahoru"
+
+    def jdi_dolu():
+        if hlava.direction != "nahoru":
+            hlava.direction = "dolu"
+
+    def jdi_doleva():
+        if hlava.direction != "doprava":
+            hlava.direction = "doleva"
+
+    def jdi_doprava():
+        if hlava.direction != "doleva":
+            hlava.direction = "doprava"
+
+    def pohyb():
+        if hlava.direction == "nahoru":
+            y = hlava.ycor()
+            hlava.sety(y + 20)
+        if hlava.direction == "dolu":
+            y = hlava.ycor()
+            hlava.sety(y - 20)
+        if hlava.direction == "doleva":
+            x = hlava.xcor()
+            hlava.setx(x - 20)
+        if hlava.direction == "doprava":
+            x = hlava.xcor()
+            hlava.setx(x + 20)
+
+    # === Ovládání (přidána podpora WSAD) ===
+    okno.listen()
+    okno.onkeypress(jdi_nahoru, "Up")
+    okno.onkeypress(jdi_dolu, "Down")
+    okno.onkeypress(jdi_doleva, "Left")
+    okno.onkeypress(jdi_doprava, "Right")
+    okno.onkeypress(jdi_nahoru, "w")
+    okno.onkeypress(jdi_dolu, "s")
+    okno.onkeypress(jdi_doleva, "a")
+    okno.onkeypress(jdi_doprava, "d")
+
+    # === Hlavní smyčka hry ===
+    while hra_bezi:
+        okno.update()
+
+        # Kontrola kolize s okrajem
+        if abs(hlava.xcor()) > 290 or abs(hlava.ycor()) > 290:
+            uloz_skore(skore)
+            if skore > high_score:
+                high_score = skore
+            time.sleep(1)
+            hlava.goto(0, 0)
+            hlava.direction = "stop"
+            for segment in telo:
+                segment.goto(1000, 1000)
+            telo.clear()
+            skore = 0
+            update_skore()
+
+        # Kontrola kolize s jídlem
+        if hlava.distance(jidlo) < 20:
+            x = random.randint(-290, 290)
+            y = random.randint(-290, 290)
+            jidlo.goto(x, y)
+            
+            # Zvýšíme skóre
+            skore += 10
+            update_skore()
+            
+            # přidáme nový segment těla
+            novy_segment = turtle.Turtle()
+            novy_segment.speed(0)
+            novy_segment.shape("square")
+            novy_segment.color("green")
+            novy_segment.penup()
+            telo.append(novy_segment)
+
+        # pohyb těla
+        for index in range(len(telo)-1, 0, -1):
+            x = telo[index-1].xcor()
+            y = telo[index-1].ycor()
+            telo[index].goto(x, y)
+
+        if len(telo) > 0:
+            telo[0].goto(hlava.xcor(), hlava.ycor())
+
+        pohyb()
+
+        # kolize s tělem
+        for segment in telo:
+            if segment.distance(hlava) < 20:
+                uloz_skore(skore)
+                if skore > high_score:
+                    high_score = skore
+                time.sleep(1)
+                hlava.goto(0, 0)
+                hlava.direction = "stop"
+                for segment in telo:
+                    segment.goto(1000, 1000)
+                telo.clear()
+                skore = 0
+                update_skore()
+
+        time.sleep(rychlost)  # Plynulejší pohyb
+
+# === Spuštění hlavního cyklu ===
+okno.mainloop()
