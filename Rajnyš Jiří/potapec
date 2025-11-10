@@ -1,0 +1,252 @@
+import pygame
+import sys
+import math
+import random
+import time
+
+pygame.init()
+
+# okno
+info = pygame.display.Info()
+WIDTH, HEIGHT = info.current_w, info.current_h
+screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.FULLSCREEN)
+clock = pygame.time.Clock()
+font = pygame.font.SysFont(None, 32)
+
+# barvy
+SKY_BLUE = (135, 206, 250)
+DARK_WATER = (10, 20, 60)
+WHITE = (255, 255, 255)
+GREEN = (0, 255, 0)
+RED = (255, 0, 0)
+BROWN = (80, 40, 20)
+GREY = (100, 100, 100)
+AIR_BUBBLE_COLOR = (135, 206, 235)
+
+# Teren a hrac
+cliff_y = HEIGHT // 2 - 300
+cliff = pygame.Rect(100, cliff_y, 300, 30)
+player = pygame.Rect(200, cliff_y - 50, 40, 40)
+velocity = [0, 0]
+gravity = 0.5
+charging = False
+charge_power = 0
+MAX_CHARGE = 20
+on_platform = True
+in_water = False
+camera_offset = 0
+start_depth = player.y
+
+# Oxygen
+oxygen = 100
+oxygen_depletion_rate = 0.05
+oxygen_recovery_rate = 0.5
+in_air_bubble = False
+
+# bubliny
+air_bubbles = [
+    {"x": WIDTH // 2, "y": 1500, "r": 60},
+    {"x": WIDTH // 2 + 200, "y": 2200, "r": 80},
+    {"x": WIDTH // 2 - 150, "y": 3000, "r": 70},
+]
+
+# prekazky (static)
+obstacles = []
+for i in range(1000, 5000, 600):
+    width = random.randint(60, 140)
+    height = random.randint(100, 300)
+    side = random.choice(["left", "right"])
+    x = 0 if side == "left" else WIDTH - width
+    obstacles.append(pygame.Rect(x, i, width, height))
+
+# chobotnice
+octopus = {"rect": pygame.Rect(WIDTH//2 - 25, 1800, 50, 50),
+           "dir": 1,
+           "range": 150,
+           "speed": 2,
+           "start_x": WIDTH//2 - 25,
+           "active": True}
+
+# QTE
+qte_active = False
+qte_sequence = []
+qte_index = 0
+qte_timer = 0
+qte_time_limit = 1500  # ms per key
+
+def start_qte():
+    global qte_active, qte_sequence, qte_index, qte_timer
+    qte_sequence = [random.choice(["up", "down", "left", "right"]) for _ in range(4)]
+    qte_index = 0
+    qte_active = True
+    qte_timer = pygame.time.get_ticks()
+
+def draw_arrow(direction, pos):
+    symbols = {"up": "↑", "down": "↓", "left": "←", "right": "→"}
+    text = font.render(symbols[direction], True, WHITE)
+    screen.blit(text, pos)
+
+def draw_air_bubble(bubble, camera_offset):
+    pygame.draw.circle(screen, AIR_BUBBLE_COLOR, (bubble["x"], bubble["y"] - camera_offset), bubble["r"], 3)
+
+def check_in_bubble(player, bubble):
+    dx = player.centerx - bubble["x"]
+    dy = player.centery - bubble["y"]
+    distance = math.hypot(dx, dy)
+    return distance < bubble["r"]
+
+def constrain_to_screen(rect):
+    if rect.left < 0:
+        rect.left = 0
+    if rect.right > WIDTH:
+        rect.right = WIDTH
+
+def draw_qte():
+    for i, key in enumerate(qte_sequence):
+        color = GREEN if i < qte_index else WHITE
+        text = font.render({"up":"↑","down":"↓","left":"←","right":"→"}[key], True, color)
+        screen.blit(text, (WIDTH // 2 - 60 + i * 40, HEIGHT // 2 - 100))
+
+# Game loop
+running = True
+while running:
+    screen.fill(SKY_BLUE if player.y - start_depth < 0 else DARK_WATER)
+    mouse_pos = pygame.mouse.get_pos()
+
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE):
+            pygame.quit()
+            sys.exit()
+
+        if qte_active:
+            if event.type == pygame.KEYDOWN:
+                correct = False
+                key = qte_sequence[qte_index]
+                if (key == "up" and event.key == pygame.K_UP) or                    (key == "down" and event.key == pygame.K_DOWN) or                    (key == "left" and event.key == pygame.K_LEFT) or                    (key == "right" and event.key == pygame.K_RIGHT):
+                    correct = True
+
+                if correct:
+                    qte_index += 1
+                    qte_timer = pygame.time.get_ticks()
+                    if qte_index >= len(qte_sequence):
+                        qte_active = False
+                        octopus["active"] = False  # octopus disappears after success
+                else:
+                    oxygen -= 30
+                    qte_active = False
+        else:
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
+                if on_platform or in_water:
+                    charging = True
+                    charge_power = 0
+            if event.type == pygame.KEYUP and event.key == pygame.K_SPACE and charging:
+                charging = False
+                dx = mouse_pos[0] - player.centerx
+                dy = (mouse_pos[1] + camera_offset) - player.centery
+                dist = math.hypot(dx, dy)
+                if dist == 0:
+                    dist = 1
+                norm_dx = dx / dist
+                norm_dy = dy / dist
+                force = charge_power * (0.25 if in_water else 1.0)
+                velocity[0] = norm_dx * force
+                velocity[1] = norm_dy * force
+                on_platform = False
+
+    # QTE timeout
+    if qte_active and pygame.time.get_ticks() - qte_timer > qte_time_limit:
+        oxygen -= 30
+        qte_active = False
+
+    if charging and charge_power < MAX_CHARGE:
+        charge_power += 0.4
+
+    if in_water:
+        velocity[1] += gravity * 0.02
+        velocity[1] -= 0.01
+        velocity[0] *= 0.98
+        velocity[1] *= 0.98
+    else:
+        velocity[1] += gravity
+        velocity[0] *= 0.99
+        velocity[1] *= 0.99
+
+    if not qte_active:
+        player.x += velocity[0]
+        player.y += velocity[1]
+        constrain_to_screen(player)
+
+    camera_offset = player.y - HEIGHT // 2
+
+    # Water check
+    in_water = player.y - start_depth > 0
+
+    # bubliny check
+    in_air_bubble = any(check_in_bubble(player, b) for b in air_bubbles)
+
+    if in_water and not in_air_bubble:
+        if player.y - start_depth > 100:
+            oxygen -= oxygen_depletion_rate
+    else:
+        oxygen = min(100, oxygen + oxygen_recovery_rate)
+
+    if oxygen <= 0:
+        screen.fill((0, 0, 0))
+        text = font.render("Utopil ses – došel kyslík!", True, RED)
+        screen.blit(text, (WIDTH // 2 - 150, HEIGHT // 2))
+        pygame.display.flip()
+        pygame.time.wait(3000)
+        pygame.quit()
+        sys.exit()
+
+    # utes
+    cliff_draw = pygame.Rect(cliff.x, cliff.y - camera_offset, cliff.width, cliff.height)
+    pygame.draw.rect(screen, BROWN, cliff_draw)
+    if player.colliderect(cliff) and velocity[1] >= 0:
+        player.bottom = cliff.top
+        velocity = [0, 0]
+        on_platform = True
+
+    # prekazky
+    for obs in obstacles:
+        obs_draw = pygame.Rect(obs.x, obs.y - camera_offset, obs.width, obs.height)
+        pygame.draw.rect(screen, GREY, obs_draw)
+        if player.colliderect(obs) and velocity[1] >= 0:
+            player.bottom = obs.top
+            velocity[1] = 0
+
+    # bubliny
+    for bubble in air_bubbles:
+        draw_air_bubble(bubble, camera_offset)
+
+    # chobotnice
+    if octopus["active"]:
+        oct = octopus["rect"]
+        oct.x += octopus["dir"] * octopus["speed"]
+        if abs(oct.x - octopus["start_x"]) > octopus["range"]:
+            octopus["dir"] *= -1
+        pygame.draw.rect(screen, (200, 0, 200), pygame.Rect(oct.x, oct.y - camera_offset, oct.width, oct.height))
+        if player.colliderect(oct) and not qte_active:
+            start_qte()
+
+    # hrac
+    draw_y = player.y - camera_offset
+    pygame.draw.rect(screen, WHITE, (player.x, draw_y, player.width, player.height))
+
+    # Oxygen bar
+    pygame.draw.rect(screen, RED, (20, 60, 100, 20))
+    pygame.draw.rect(screen, GREEN, (20, 60, max(0, oxygen), 20))
+    oxygen_text = font.render(f"O2: {int(oxygen)}%", True, WHITE)
+    screen.blit(oxygen_text, (130, 58))
+
+    # hloubka
+    depth = max(0, int(player.y - start_depth))
+    depth_text = font.render(f"{depth} m", True, WHITE)
+    screen.blit(depth_text, (WIDTH - 120, 20))
+
+    # QTE display
+    if qte_active:
+        draw_qte()
+
+    pygame.display.flip()
+    clock.tick(60)
