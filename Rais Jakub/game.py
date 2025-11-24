@@ -15,9 +15,9 @@ class Minesweeper:
         # Scoreboard frame
         self.scoreboard_frame = tk.Frame(self.root, bg="lightgray")
         self.scoreboard_frame.place(relx=0.01, rely=0.05, relwidth=0.22, relheight=0.9)
-        self.scoreboard_label = tk.Label(self.scoreboard_frame, text="Scoreboard", font=("Arial", 16, "bold"), bg="lightgray")
+        self.scoreboard_label = tk.Label(self.scoreboard_frame, text="Scoreboard", font=("Arial", 30, "bold"), bg="lightgray")
         self.scoreboard_label.pack(pady=10)
-        self.scoreboard_list = tk.Listbox(self.scoreboard_frame, font=("Arial", 13), width=25)
+        self.scoreboard_list = tk.Listbox(self.scoreboard_frame, font=("Arial", 15), width=25)
         self.scoreboard_list.pack(padx=10, pady=10, fill="both", expand=True)
 
         # SQLite: ulozeni vysledku
