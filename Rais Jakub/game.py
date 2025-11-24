@@ -103,11 +103,21 @@ class Minesweeper:
         # Herni plocha
         self.frame = tk.Frame(self.root)
         self.frame.place(relx=0.5, rely=0.5, anchor="center")
+
+        # Dynamické určení velikosti tlačítek podle velikosti okna a pole
+        screen_width = self.root.winfo_screenwidth()
+        screen_height = self.root.winfo_screenheight()
+        # Rezerva pro horní info panel a okraje
+        usable_height = int(screen_height * 0.7)
+        usable_width = int(screen_width * 0.7)
+        btn_size = min(usable_width // velikost, usable_height // velikost)
+        btn_size = max(20, btn_size)  # minimální velikost tlačítka
+
         for i in range(velikost):
-            self.frame.grid_rowconfigure(i, weight=1, minsize=40)
+            self.frame.grid_rowconfigure(i, weight=1, minsize=btn_size)
             for j in range(velikost):
-                self.frame.grid_columnconfigure(j, weight=1, minsize=40)
-                b = tk.Button(self.frame, width=2, height=1, command=lambda x=i, y=j: self.odkryj(x, y))
+                self.frame.grid_columnconfigure(j, weight=1, minsize=btn_size)
+                b = tk.Button(self.frame, width=btn_size // 7, height=btn_size // 20, command=lambda x=i, y=j: self.odkryj(x, y))
                 b.grid(row=i, column=j, sticky="nsew", padx=1, pady=1)
                 b.bind("<Button-3>", lambda _, x=i, y=j: self.prepni_vlajku(x, y))
                 self.tlacitka[(i, j)] = b
