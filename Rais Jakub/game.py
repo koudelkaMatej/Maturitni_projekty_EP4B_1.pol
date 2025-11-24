@@ -12,6 +12,13 @@ class Minesweeper:
         # Escape ukonci hru
         self.root.bind('<Escape>', lambda e: self.ukonci_aplikaci())
 
+        # Scoreboard frame
+        self.scoreboard_frame = tk.Frame(self.root, bg="lightgray")
+        self.scoreboard_frame.place(relx=0.01, rely=0.05, relwidth=0.22, relheight=0.9)
+        self.scoreboard_label = tk.Label(self.scoreboard_frame, text="Scoreboard", font=("Arial", 16, "bold"), bg="lightgray")
+        self.scoreboard_label.pack(pady=10)
+        self.scoreboard_list = tk.Listbox(self.scoreboard_frame, font=("Arial", 13), width=25)
+        self.scoreboard_list.pack(padx=10, pady=10, fill="both", expand=True)
 
         # SQLite: ulozeni vysledku
         self.conn = sqlite3.connect("score.db")
@@ -53,6 +60,8 @@ class Minesweeper:
             font=("Arial", 16),
             command=lambda: self.spust_hru(16, 40),
         ).pack(pady=10)
+
+        self.aktualizuj_scoreboard()
 
     def spust_hru(self, velikost, pocet_min):
         self.menu_frame.pack_forget()
@@ -203,6 +212,7 @@ class Minesweeper:
             (jmeno, skore, cas, f"{self.velikost}x{self.velikost}", vysledek),
         )
         self.conn.commit()
+        self.aktualizuj_scoreboard()
         # Nabidni novou hru
         chce_znovu = messagebox.askyesno("Hra ukončena", "Zkusit znovu?")
         if chce_znovu:
@@ -246,6 +256,12 @@ class Minesweeper:
         if hasattr(self, "frame") and self.frame.winfo_exists():
             self.root.after(500, self.aktualizuj_info)
 
+    def aktualizuj_scoreboard(self):
+        self.scoreboard_list.delete(0, tk.END)
+        self.cursor.execute("SELECT jmeno, skore, cas, obtiznost, vysledek FROM vysledky ORDER BY skore DESC, cas ASC LIMIT 10")
+        vysledky = self.cursor.fetchall()
+        for idx, (jmeno, skore, cas, obtiznost, vysledek) in enumerate(vysledky, 1):
+            self.scoreboard_list.insert(tk.END, f"{idx}. {jmeno} | {skore}b | {cas}s | {obtiznost} | {vysledek}")
 
 if __name__ == "__main__":
     root = tk.Tk()
