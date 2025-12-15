@@ -41,22 +41,22 @@ class Minesweeper:
         self.menu_frame = tk.Frame(self.root)
         self.menu_frame.pack(expand=True)
 
-        tk.Label(self.menu_frame, text="Vyber obtiznost:", font=("Arial", 20)).pack(pady=20)
+        tk.Label(self.menu_frame, text="Vyber obtížnost:", font=("Arial", 20)).pack(pady=20)
         tk.Button(
             self.menu_frame,
-            text="Zacatecnik (8x8, 10 miny)",
+            text="Začátečník (8x8, 10 min)",
             font=("Arial", 16),
             command=lambda: self.spust_hru(8, 10),
         ).pack(pady=10)
         tk.Button(
             self.menu_frame,
-            text="Stredni (12x12, 20 miny)",
+            text="Střední (12x12, 20 min)",
             font=("Arial", 16),
             command=lambda: self.spust_hru(12, 20),
         ).pack(pady=10)
         tk.Button(
             self.menu_frame,
-            text="Expert (16x16, 40 miny)",
+            text="Expert (16x16, 40 min)",
             font=("Arial", 16),
             command=lambda: self.spust_hru(16, 40),
         ).pack(pady=10)
