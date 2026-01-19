@@ -3,10 +3,12 @@ import random
 
 pygame.init()
 
-# Nastavení okna
+# Nastavení
 WIDTH, HEIGHT = 800, 600
 win = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Pong – Myš vs Bot")
+clock = pygame.time.Clock()
+running = True
 
 # Barvy
 WHITE = (255, 255, 255)
@@ -21,21 +23,42 @@ menu_font = pygame.font.SysFont("consolas", 60)
 PADDLE_WIDTH, PADDLE_HEIGHT = 10, 100
 BALL_SIZE = 15
 
-# Tlačítko START
-start_button = pygame.Rect(WIDTH//2 - 150, HEIGHT//2 - 50, 300, 100)
+# Zrychlování míčku
+BALL_ACCELERATION = 1.05
+MAX_BALL_SPEED = 12
 
-clock = pygame.time.Clock()
-running = True
-game_state = "menu"  # "menu" nebo "game"
+# MENU
+start_button = pygame.Rect(WIDTH//2 - 200, HEIGHT//2 - 80, 400, 80)
+difficulty_button = pygame.Rect(WIDTH//2 - 200, HEIGHT//2 + 20, 400, 60)
 
-# ---------- Funkce pro reset hry ----------
+easy_button = pygame.Rect(WIDTH//2 - 150, HEIGHT//2 + 100, 300, 50)
+medium_button = pygame.Rect(WIDTH//2 - 150, HEIGHT//2 + 160, 300, 50)
+hard_button = pygame.Rect(WIDTH//2 - 150, HEIGHT//2 + 220, 300, 50)
+
+# Obtížnost
+BOT_SPEEDS = {
+    "easy": 3,
+    "medium": 5,
+    "hard": 8
+}
+
+difficulty = "medium"
+show_difficulty = False
+
+# Stav hry
+game_state = "menu"
+waiting_for_click = False
+ball_speed_x = 0
+ball_speed_y = 0
+
+# Funkce
 def reset_game():
     global left_paddle, right_paddle, ball
     global ball_speed_x, ball_speed_y
     global score_left, score_right
 
-    left_paddle = pygame.Rect(50, HEIGHT//2 - PADDLE_HEIGHT//2, PADDLE_WIDTH, PADDLE_HEIGHT)
-    right_paddle = pygame.Rect(WIDTH - 60, HEIGHT//2 - PADDLE_HEIGHT//2, PADDLE_WIDTH, PADDLE_HEIGHT)
+    left_paddle = pygame.Rect(50, HEIGHT//2 - 50, PADDLE_WIDTH, PADDLE_HEIGHT)
+    right_paddle = pygame.Rect(WIDTH - 60, HEIGHT//2 - 50, PADDLE_WIDTH, PADDLE_HEIGHT)
     ball = pygame.Rect(WIDTH//2 - BALL_SIZE//2, HEIGHT//2 - BALL_SIZE//2, BALL_SIZE, BALL_SIZE)
 
     ball_speed_x = random.choice([-5, 5])
@@ -44,11 +67,27 @@ def reset_game():
     score_left = 0
     score_right = 0
 
+def draw_button(rect, text):
+    pygame.draw.rect(win, GRAY, rect)
+    pygame.draw.rect(win, WHITE, rect, 2)
+    t = font.render(text, True, WHITE)
+    win.blit(
+        t,
+        (rect.centerx - t.get_width()//2,
+         rect.centery - t.get_height()//2)
+    )
 
-# Inicializace hry poprvé
+def accelerate_ball():
+    global ball_speed_x, ball_speed_y
+
+    if abs(ball_speed_x) < MAX_BALL_SPEED:
+        ball_speed_x *= BALL_ACCELERATION
+    if abs(ball_speed_y) < MAX_BALL_SPEED:
+        ball_speed_y *= BALL_ACCELERATION
+
 reset_game()
 
-# ---------- Hlavní smyčka ----------
+# Hlavní loop
 while running:
     clock.tick(60)
 
@@ -56,78 +95,92 @@ while running:
         if event.type == pygame.QUIT:
             running = False
 
-        # Kliknutí v menu
-        if game_state == "menu":
-            if event.type == pygame.MOUSEBUTTONDOWN:
-                if start_button.collidepoint(event.pos):
-                    reset_game()
-                    game_state = "game"
+        # ===== MENU OVLÁDÁNÍ =====
+        if game_state == "menu" and event.type == pygame.MOUSEBUTTONDOWN:
 
-    # ---------- MENU ----------
+            if start_button.collidepoint(event.pos):
+                reset_game()
+                game_state = "game"
+
+            elif difficulty_button.collidepoint(event.pos):
+                show_difficulty = not show_difficulty
+
+            elif show_difficulty:
+                if easy_button.collidepoint(event.pos):
+                    difficulty = "easy"
+                    show_difficulty = False
+                elif medium_button.collidepoint(event.pos):
+                    difficulty = "medium"
+                    show_difficulty = False
+                elif hard_button.collidepoint(event.pos):
+                    difficulty = "hard"
+                    show_difficulty = False
+
+        # Klik po skórování
+        if game_state == "game" and waiting_for_click:
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                ball_speed_x = random.choice([-5, 5])
+                ball_speed_y = random.choice([-3, 3])
+                waiting_for_click = False
+
+    # Menu
     if game_state == "menu":
         win.fill(BLACK)
 
         title = menu_font.render("PONG", True, WHITE)
-        win.blit(title, (WIDTH//2 - title.get_width()//2, 150))
+        win.blit(title, (WIDTH//2 - title.get_width()//2, 100))
 
-        pygame.draw.rect(win, GRAY, start_button)
-        pygame.draw.rect(win, WHITE, start_button, 3)
+        draw_button(start_button, "START")
+        draw_button(difficulty_button, f"Obtiznost: {difficulty.capitalize()}")
 
-        start_text = font.render("START", True, WHITE)
-        win.blit(
-            start_text,
-            (start_button.centerx - start_text.get_width()//2,
-             start_button.centery - start_text.get_height()//2)
-        )
+        if show_difficulty:
+            draw_button(easy_button, "Easy")
+            draw_button(medium_button, "Medium")
+            draw_button(hard_button, "Hard")
 
         pygame.display.flip()
         continue
 
-    # ---------- HRA ----------
-    # Ovládání levé pálky myší
-    mouse_y = pygame.mouse.get_pos()[1]
-    left_paddle.centery = mouse_y
+    # Hra
+    left_paddle.centery = pygame.mouse.get_pos()[1]
     left_paddle.clamp_ip(pygame.Rect(0, 0, WIDTH, HEIGHT))
 
-    # Pohyb bota
+    bot_speed = BOT_SPEEDS[difficulty]
     if right_paddle.centery < ball.centery - 15:
-        right_paddle.centery += 4
+        right_paddle.centery += bot_speed
     elif right_paddle.centery > ball.centery + 15:
-        right_paddle.centery -= 4
+        right_paddle.centery -= bot_speed
 
     right_paddle.clamp_ip(pygame.Rect(0, 0, WIDTH, HEIGHT))
 
-    # Pohyb míčku
     ball.x += ball_speed_x
     ball.y += ball_speed_y
 
-    # Kolize s okraji
     if ball.top <= 0 or ball.bottom >= HEIGHT:
         ball_speed_y *= -1
 
-    # Kolize s pálkami
     if ball.colliderect(left_paddle):
         ball_speed_x *= -1
-        ball.x = left_paddle.right
+        ball.left = left_paddle.right
+        accelerate_ball()
 
     if ball.colliderect(right_paddle):
         ball_speed_x *= -1
-        ball.x = right_paddle.left - BALL_SIZE
+        ball.right = right_paddle.left
+        accelerate_ball()
 
-    # Skórování
     if ball.left <= 0:
         score_right += 1
         ball.center = (WIDTH//2, HEIGHT//2)
-        ball_speed_x = random.choice([-5, 5])
-        ball_speed_y = random.choice([-3, 3])
+        ball_speed_x = ball_speed_y = 0
+        waiting_for_click = True
 
     if ball.right >= WIDTH:
         score_left += 1
         ball.center = (WIDTH//2, HEIGHT//2)
-        ball_speed_x = random.choice([-5, 5])
-        ball_speed_y = random.choice([-3, 3])
+        ball_speed_x = ball_speed_y = 0
+        waiting_for_click = True
 
-    # Vykreslení hry
     win.fill(BLACK)
     pygame.draw.rect(win, WHITE, left_paddle)
     pygame.draw.rect(win, WHITE, right_paddle)
