@@ -2,3 +2,7 @@ Na zapnutí venv:
 1) & "g:/win32app/Portable Python-3.13.3 x64/python.exe" -m venv venv
 2) Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
 3) .\venv\Scripts\activate
+
+Musí se stáhnout Pygame přes: pip install Pygame
+A musí se stáhnout flask přes: pip install flask
+!!! Pokud to nebude fungovat kvůli venvu (fatal error), zkus: python -m pip install flask/python
