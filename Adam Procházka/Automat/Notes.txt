@@ -6,3 +6,9 @@ Na zapnutí venv:
 Musí se stáhnout Pygame přes: pip install Pygame
 A musí se stáhnout flask přes: pip install flask
 !!! Pokud to nebude fungovat kvůli venvu (fatal error), zkus: python -m pip install flask/python
+
+Udělat requirements u installu ať je to jednodušší?
+Opravit stats a leaderboard (loading & saving)
+Přidat další symboly?
+Dodělat grafiku hry (nějaký pozadí?)
+Opravit a upravit ty chipy a shop
