@@ -1,0 +1,8 @@
+{
+  "Nerbjos77": {
+    "password_hash": "scrypt:32768:8:1$eOJ8siL9LjIox3cQ$6a70357d81d61cf68dd43893c80fa7a078ec17dbeebd3577bb1400f138c34ebe42e22fbe1e585e69448495a4d62b15683b0d48d7c879e8337f46905c7b54dcc3"
+  },
+  "Admin": {
+    "password_hash": "scrypt:32768:8:1$mcL0EaCubzGd10BO$07d2eb0fb5884b6411aef0999bbc52ba14206b7a1ce8438ecca35623bcb1a7e484bcea56cc373149f572f7a8e28611087b55e02dff63aec7752b2bef3d4c8af4"
+  }
+}
