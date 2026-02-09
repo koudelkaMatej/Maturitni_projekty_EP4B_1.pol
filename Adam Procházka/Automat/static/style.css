@@ -1,0 +1,367 @@
+/* ====== 8-bit Arcade (Yellow/Black) ====== */
+:root {
+  --bg: #060606;
+  --panel: #0e0e0e;
+  --yellow: #ffd400;
+  --yellow2: #ffea66;
+  --text: #fff7cc;
+  --muted: #bda95a;
+  --danger: #ff5b5b;
+  --shadow: rgba(255, 212, 0, 0.18);
+  --border: rgba(255, 212, 0, 0.55);
+}
+
+* {
+  box-sizing: border-box;
+}
+html,
+body {
+  height: 100%;
+}
+body {
+  margin: 0;
+  background:
+    radial-gradient(
+      1200px 600px at 50% 20%,
+      rgba(255, 212, 0, 0.08),
+      transparent 60%
+    ),
+    repeating-linear-gradient(
+      0deg,
+      rgba(255, 255, 255, 0.03) 0px,
+      rgba(255, 255, 255, 0.03) 1px,
+      transparent 2px,
+      transparent 4px
+    ),
+    var(--bg);
+  color: var(--text);
+  font-family:
+    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+    "Courier New", monospace;
+  image-rendering: pixelated;
+  overflow-x: hidden;
+}
+
+/* Fake CRT vignette + glow */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(
+      closest-side at 50% 50%,
+      transparent 60%,
+      rgba(0, 0, 0, 0.55)
+    ),
+    radial-gradient(
+      closest-side at 50% 40%,
+      rgba(255, 212, 0, 0.06),
+      transparent 65%
+    );
+  pointer-events: none;
+  mix-blend-mode: screen;
+}
+
+/* Container */
+.wrap {
+  min-height: 100%;
+  display: grid;
+  place-items: center;
+  padding: 28px 16px;
+}
+
+.card {
+  width: min(920px, 100%);
+  background:
+    linear-gradient(180deg, rgba(255, 212, 0, 0.06), transparent 40%),
+    var(--panel);
+  border: 2px solid var(--border);
+  box-shadow:
+    0 0 0 4px rgba(0, 0, 0, 0.7),
+    0 0 40px var(--shadow);
+  padding: 22px;
+  position: relative;
+}
+
+.card::after {
+  /* top highlight line */
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 212, 0, 0.85),
+    transparent
+  );
+}
+
+/* Header */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+  padding-bottom: 14px;
+  border-bottom: 2px dashed rgba(255, 212, 0, 0.25);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.pacdot {
+  width: 18px;
+  height: 18px;
+  background: var(--yellow);
+  border-radius: 0;
+  box-shadow: 0 0 18px rgba(255, 212, 0, 0.35);
+  outline: 2px solid rgba(0, 0, 0, 0.6);
+}
+
+.h1 {
+  margin: 0;
+  font-size: 24px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--yellow);
+  text-shadow: 0 0 12px rgba(255, 212, 0, 0.35);
+}
+
+.sub {
+  margin: 6px 0 0 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* Flash messages */
+.flash {
+  margin: 0 0 12px 0;
+  padding: 10px 12px;
+  border: 2px solid rgba(255, 91, 91, 0.7);
+  background: rgba(255, 91, 91, 0.08);
+  color: #ffd5d5;
+}
+
+/* Form */
+.form {
+  display: grid;
+  gap: 10px;
+  max-width: 420px;
+}
+
+.label {
+  font-size: 12px;
+  color: var(--muted);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  line-height: 1.35;
+  padding-bottom: 4px;
+  display: inline-block;
+}
+
+.input {
+  width: 100%;
+  padding: 12px 12px;
+  border: 2px solid rgba(255, 212, 0, 0.35);
+  background: rgba(0, 0, 0, 0.35);
+  color: var(--text);
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(0, 0, 0, 0.65);
+}
+
+.input:focus {
+  border-color: rgba(255, 212, 0, 0.95);
+  box-shadow:
+    0 0 0 4px rgba(0, 0, 0, 0.65),
+    0 0 24px rgba(255, 212, 0, 0.2);
+}
+
+/* Buttons */
+.row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.btn {
+  padding: 12px 14px;
+  border: 2px solid rgba(255, 212, 0, 0.85);
+  background: var(--yellow);
+  color: #111;
+  font-weight: 800;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  cursor: pointer;
+  box-shadow:
+    0 6px 0 rgba(150, 120, 0, 0.9),
+    0 0 22px rgba(255, 212, 0, 0.25);
+  transition: transform 0.06s ease;
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+}
+.btn:active {
+  transform: translateY(4px);
+  box-shadow: 0 2px 0 rgba(150, 120, 0, 0.9);
+}
+
+.btn.secondary {
+  background: transparent;
+  color: var(--yellow);
+  border-color: rgba(255, 212, 0, 0.55);
+  box-shadow: 0 0 0 4px rgba(0, 0, 0, 0.65);
+}
+
+/* Links */
+a {
+  color: var(--yellow2);
+  text-decoration: none;
+}
+a:hover {
+  text-decoration: underline;
+}
+
+/* Leaderboard */
+.grid {
+  display: grid;
+  grid-template-columns: 1.3fr 0.7fr;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.lb {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: 2px solid rgba(255, 212, 0, 0.25);
+  background: rgba(0, 0, 0, 0.25);
+}
+
+.lb li {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border-bottom: 2px dashed rgba(255, 212, 0, 0.15);
+}
+
+.lb li:last-child {
+  border-bottom: none;
+}
+
+.rank {
+  color: var(--muted);
+  min-width: 34px;
+}
+
+.name {
+  color: var(--text);
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.score {
+  color: var(--yellow);
+  font-weight: 800;
+  min-width: 80px;
+  text-align: right;
+}
+
+/* Small helper */
+.right {
+  text-align: right;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* Mobile */
+@media (max-width: 560px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+  .h1 {
+    font-size: 20px;
+  }
+}
+
+.panel {
+  border: 2px solid rgba(255, 212, 0, 0.25);
+  background: rgba(0, 0, 0, 0.25);
+  padding: 12px;
+}
+
+.panel h2 {
+  margin: 0 0 10px 0;
+  font-size: 14px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--yellow);
+  line-height: 1.2;
+}
+
+.stats {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.stats td {
+  padding: 8px 6px;
+  border-bottom: 2px dashed rgba(255, 212, 0, 0.15);
+  vertical-align: top;
+}
+
+.stats tr:last-child td {
+  border-bottom: none;
+}
+
+.stats .k {
+  color: var(--muted);
+  width: 70%;
+}
+
+.stats .v {
+  color: var(--yellow);
+  font-weight: 800;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.corner-logo {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  z-index: 9999;
+  padding: 0;
+  background: none;
+  border: none;
+  box-shadow: none;
+}
+
+.corner-logo img {
+  height: 100px;
+  width: auto;
+  display: block;
+}
+
+/* na mobilu trochu menší */
+@media (max-width: 560px) {
+  .corner-logo {
+    top: 10px;
+    left: 10px;
+    padding: 8px;
+  }
+  .corner-logo img {
+    height: 48px;
+  }
+}

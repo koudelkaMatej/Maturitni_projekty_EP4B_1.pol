@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="cs">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Leaderboard</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='style.css') }}"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href="{{ url_for('static', filename='icon.png') }}?v=2"
+    />
+    <link
+      rel="icon"
+      type="image/x-icon"
+      href="{{ url_for('static', filename='icon.ico') }}?v=2"
+    />
+  </head>
+  <body>
+    <a class="corner-logo" href="/login">
+      <img
+        src="{{ url_for('static', filename='PixSpin.png') }}"
+        alt="PixSpin"
+      />
+    </a>
+
+    <div class="wrap">
+      <div class="card">
+        <div class="header">
+          <div class="brand">
+            <div class="pacdot"></div>
+            <div>
+              <h1 class="h1">LEADERBOARD</h1>
+              <p class="sub">PLACEHOLDER • PLACEHOLDER</p>
+            </div>
+          </div>
+
+          <div class="right">
+            Přihlášen: <b style="color: var(--yellow)">{{ user }}</b><br />
+            <a href="/logout">Odhlásit</a>
+          </div>
+        </div>
+
+        <div class="grid">
+          <!-- LEVÝ PANEL: TOP SKÓRE -->
+          <div class="panel">
+            <h2>TOP SKÓRE</h2>
+
+            <ul class="lb">
+              {% for name, score in rows %}
+              <li>
+                <span class="name">{{ loop.index }}. {{ name }}</span>
+                <span class="score">{{ score }}</span>
+              </li>
+              {% endfor %}
+            </ul>
+
+            {% if rows|length == 0 %}
+            <p class="sub" style="margin-top: 10px">
+              Zatím žádné záznamy v leaderboardu.
+            </p>
+            {% endif %}
+          </div>
+
+          <!-- PRAVÝ PANEL: STATISTIKY -->
+          <div class="panel">
+            <h2>STATISTIKY</h2>
+
+            <table class="stats">
+              <tr>
+                <td class="k">Celkový počet zatočení</td>
+                <td class="v">{{ stats.total_spins }}</td>
+              </tr>
+              <tr>
+                <td class="k">Nejvíce zatočení v jedné hře</td>
+                <td class="v">{{ stats.max_spins }}</td>
+              </tr>
+              <tr>
+                <td class="k">Počet jackpotů</td>
+                <td class="v">{{ stats.jackpots }}</td>
+              </tr>
+              <tr>
+                <td class="k">Nejvíc jackpotů v kuse</td>
+                <td class="v">{{ stats.max_jackpot_streak }}</td>
+              </tr>
+              <tr>
+                <td class="k">Největší skóre z jednoho zatočení</td>
+                <td class="v">{{ stats.max_score_spin }}</td>
+              </tr>
+              <tr>
+                <td class="k">Nejnižší skóre</td>
+                <td class="v">
+                  {{ stats.lowest_score if stats.lowest_score is not none else
+                  "N/A" }}
+                </td>
+              </tr>
+            </table>
+
+            <p class="sub" style="margin-top: 12px">PLACEHOLDER</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
