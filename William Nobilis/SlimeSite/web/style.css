@@ -1,0 +1,104 @@
+:root {
+    font-family: system-ui, Arial;
+}
+
+body {
+    margin: 0;
+    background: #0f1220;
+    color: #e9ecff;
+}
+
+a {
+    color: #b9c3ff;
+    text-decoration: none;
+}
+
+.wrap {
+    max-width: 920px;
+    margin: 0 auto;
+    padding: 18px;
+}
+
+.topbar {
+    position: sticky;
+    top: 0;
+    background: #12162a;
+    border-bottom: 1px solid #232a46;
+}
+
+.brand a {
+    font-weight: 800;
+    font-size: 18px;
+}
+
+.nav {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+.pill {
+    padding: 6px 10px;
+    border: 1px solid #2a335a;
+    border-radius: 999px;
+    color: #cfd6ff;
+}
+
+.btn {
+    padding: 8px 12px;
+    border: 1px solid #2a335a;
+    border-radius: 10px;
+}
+
+.card {
+    background: #12162a;
+    border: 1px solid #232a46;
+    border-radius: 16px;
+    padding: 16px;
+    margin: 14px 0;
+}
+
+input {
+    width: 100%;
+    padding: 10px;
+    border-radius: 10px;
+    border: 1px solid #2a335a;
+    background: #0e1122;
+    color: #e9ecff;
+}
+
+label {
+    display: block;
+    margin: 10px 0 6px;
+    color: #cfd6ff;
+}
+
+button {
+    padding: 10px 14px;
+    border-radius: 10px;
+    border: 1px solid #2a335a;
+    background: #1a2150;
+    color: #e9ecff;
+    cursor: pointer;
+}
+
+.small {
+    color: #aab3e6;
+    font-size: 14px;
+}
+
+.footer {
+    border-top: 1px solid #232a46;
+    margin-top: 30px;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th, td {
+    padding: 10px;
+    border-bottom: 1px solid #232a46;
+    text-align: left;
+}
