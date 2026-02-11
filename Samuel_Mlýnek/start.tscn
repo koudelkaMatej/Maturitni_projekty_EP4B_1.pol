@@ -1,0 +1,129 @@
+[gd_scene load_steps=6 format=3 uid="uid://cix8qaxh2elxt"]
+
+[ext_resource type="Script" uid="uid://b3nl5ndiijjmo" path="res://main_menu.gd" id="1_ots34"]
+[ext_resource type="Texture2D" uid="uid://jtcap8qn5wc6" path="res://assests/Screenshot 2025-11-17 at 22-39-57 Pixelater - Free Image to Pixel Art Converter Online.png" id="2_y5hus"]
+[ext_resource type="Texture2D" uid="uid://omi2ywq0pn0l" path="res://assests/bigger_cedule1.png" id="3_4a3qj"]
+[ext_resource type="FontFile" uid="uid://ojj8a3a7lb75" path="res://fonts/IMFellEnglish-Regular.ttf" id="3_oiuna"]
+[ext_resource type="FontFile" uid="uid://cgl75bfh76ckk" path="res://fonts/IMFellEnglish-Italic.ttf" id="3_y5hus"]
+
+[node name="MainMenu" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_right = 19.0
+offset_bottom = 102.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_ots34")
+
+[node name="TextureRect" type="TextureRect" parent="."]
+layout_mode = 1
+anchors_preset = -1
+offset_left = -8.0
+offset_top = -6.0000005
+offset_right = 5844.1055
+offset_bottom = 4251.532
+grow_horizontal = 2
+grow_vertical = 2
+scale = Vector2(0.1995863, 0.16817255)
+texture = ExtResource("2_y5hus")
+
+[node name="TextureRect2" type="TextureRect" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -210.5
+offset_top = -80.0
+offset_right = 1067.5
+offset_bottom = 813.33887
+grow_horizontal = 2
+grow_vertical = 2
+scale = Vector2(0.31979132, 0.22723743)
+texture = ExtResource("3_4a3qj")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -187.5
+offset_top = -71.5
+offset_right = 187.0
+offset_bottom = 113.5
+grow_horizontal = 2
+grow_vertical = 2
+scale = Vector2(1, 1.0247859)
+theme_override_constants/separation = 19
+alignment = 1
+
+[node name="Start_button" type="Button" parent="VBoxContainer"]
+layout_mode = 2
+mouse_default_cursor_shape = 2
+theme_override_colors/font_color = Color(0.39215687, 0.5764706, 0.8745098, 1)
+theme_override_colors/font_hover_color = Color(0.85882354, 0.3529412, 0.40784314, 1)
+theme_override_constants/outline_size = 3
+theme_override_fonts/font = ExtResource("3_oiuna")
+theme_override_font_sizes/font_size = 32
+text = "Venture into battle"
+flat = true
+
+[node name="Options_button" type="Button" parent="VBoxContainer"]
+layout_mode = 2
+mouse_default_cursor_shape = 2
+theme_override_colors/font_color = Color(0.39215687, 0.5764706, 0.8745098, 1)
+theme_override_colors/font_hover_color = Color(0.85882354, 0.3529412, 0.40784314, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 3
+theme_override_constants/align_to_largest_stylebox = 1
+theme_override_fonts/font = ExtResource("3_oiuna")
+theme_override_font_sizes/font_size = 32
+text = "Battle condicions"
+flat = true
+
+[node name="Quit_button" type="Button" parent="VBoxContainer"]
+layout_mode = 2
+mouse_default_cursor_shape = 2
+theme_override_colors/font_color = Color(0.39215687, 0.5764706, 0.8745098, 1)
+theme_override_colors/font_hover_color = Color(0.85882354, 0.3529412, 0.40784314, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 3
+theme_override_fonts/font = ExtResource("3_oiuna")
+theme_override_font_sizes/font_size = 32
+text = "Desert"
+flat = true
+
+[node name="MainName" type="Label" parent="."]
+modulate = Color(0.39232236, 0.577807, 0.8755279, 1)
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -254.5
+offset_top = 103.0
+offset_right = 256.50012
+offset_bottom = 280.00003
+grow_horizontal = 2
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.75686276)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/shadow_offset_x = 6
+theme_override_constants/shadow_offset_y = 3
+theme_override_constants/outline_size = 4
+theme_override_fonts/font = ExtResource("3_y5hus")
+theme_override_font_sizes/font_size = 68
+text = "Swords & Muskets New Dawn"
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 2
+
+[node name="OptionLayer" type="Control" parent="."]
+layout_mode = 1
+offset_left = 331.0
+offset_top = 174.0
+offset_right = 372.0
+offset_bottom = 208.0
