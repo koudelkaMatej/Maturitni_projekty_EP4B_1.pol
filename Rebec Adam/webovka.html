@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="cs">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Profil hráče - Pong</title>
+    <style>
+      body {
+        background: #000;
+        color: #fff;
+        font-family: "Consolas", monospace;
+        padding: 20px;
+      }
+      .container {
+        max-width: 800px;
+        margin: 0 auto;
+        border: 1px solid #fff;
+        padding: 20px;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+      }
+      th,
+      td {
+        border: 1px solid #fff;
+        padding: 10px;
+        text-align: center;
+      }
+      th {
+        background: #333;
+      }
+      .logout {
+        float: right;
+        color: red;
+        text-decoration: none;
+        border: 1px solid red;
+        padding: 5px 10px;
+      }
+      .win {
+        color: #0f0;
+      }
+      .loss {
+        color: #f00;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <a href="{{ url_for('logout') }}" class="logout">Odhlásit</a>
+      <h1>Vítej, {{ email }}!</h1>
+      <p>Zde jsou tvé poslední výsledky ze hry:</p>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Obtížnost</th>
+            <th>Tvé skóre</th>
+            <th>Skóre bota</th>
+            <th>Výsledek</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for s in scores %}
+          <tr>
+            <td>{{ s.difficulty.capitalize() }}</td>
+            <td>{{ s.goals_left }}</td>
+            <td>{{ s.goals_right }}</td>
+            <td>
+              {% if s.goals_left > s.goals_right %}
+              <span class="win">VÝHRA</span>
+              {% elif s.goals_left < s.goals_right %}
+              <span class="loss">PROHRA</span>
+              {% else %} REMÍZA {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+
+      {% if not scores %}
+      <p style="text-align: center; margin-top: 20px; color: #888">
+        Zatím jsi neodehrál žádnou hru.
+      </p>
+      {% endif %}
+    </div>
+  </body>
+</html>

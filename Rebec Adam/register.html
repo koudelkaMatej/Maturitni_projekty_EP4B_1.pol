@@ -1,17 +1,57 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <title>register</title>
-</head>
-<body>
-<form method="post">
-    <input type="email" name="email" placeholder="Email" required>
-    <input type="password" name="psw" placeholder="Heslo" required>
-    <button type="submit">Registrovat</button>
-</form>
-
-{% if error %}
-<p style="color:red">{{ error }}</p>
-{% endif %}
-</body>
+<!doctype html>
+<html lang="cs">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Registrace - Pong</title>
+    <style>
+      body {
+        background: #000;
+        color: #fff;
+        font-family: "Consolas", monospace;
+        text-align: center;
+        padding-top: 50px;
+      }
+      form {
+        display: inline-block;
+        border: 2px solid #fff;
+        padding: 20px;
+        border-radius: 10px;
+      }
+      input {
+        display: block;
+        margin: 10px 0;
+        padding: 10px;
+        width: 250px;
+      }
+      button {
+        background: #555;
+        color: white;
+        border: 1px solid #fff;
+        padding: 10px 20px;
+        cursor: pointer;
+      }
+      button:hover {
+        background: #fff;
+        color: #000;
+      }
+      a {
+        color: #aaa;
+        text-decoration: none;
+        font-size: 0.8em;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>REGISTRACE HRÁČE</h1>
+    {% with messages = get_flashed_messages() %} {% if messages %} {% for
+    message in messages %}
+    <p style="color: red">{{ message }}</p>
+    {% endfor %} {% endif %} {% endwith %}
+    <form method="POST">
+      <input type="email" name="email" placeholder="Email" required />
+      <input type="password" name="password" placeholder="Heslo" required />
+      <button type="submit">Vytvořit účet</button>
+    </form>
+    <p><a href="{{ url_for('login') }}">Už máš účet? Přihlas se zde.</a></p>
+  </body>
 </html>
