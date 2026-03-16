@@ -2,7 +2,11 @@ import tkinter as tk
 import random
 import time
 import sqlite3
+import os
 from tkinter import messagebox, simpledialog
+
+# Cesta k databázi ve složce skriptu
+DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "score.db")
 
 class Minesweeper:
     def __init__(self, root):
@@ -21,7 +25,7 @@ class Minesweeper:
         self.scoreboard_list.pack(padx=10, pady=10, fill="both", expand=True)
 
         # SQLite: ulozeni vysledku
-        self.conn = sqlite3.connect("score.db")
+        self.conn = sqlite3.connect(DB_PATH)
         self.cursor = self.conn.cursor()
         self.cursor.execute(
             """
@@ -35,6 +39,23 @@ class Minesweeper:
             )
             """
         )
+        # Tabulka hracu s unikatnim jmenem
+        self.cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS hraci (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                jmeno TEXT UNIQUE NOT NULL
+            )
+            """
+        )
+        # Pridani sloupce hrac_id do vysledky (pokud jeste neexistuje)
+        try:
+            self.cursor.execute("ALTER TABLE vysledky ADD COLUMN hrac_id INTEGER")
+        except sqlite3.OperationalError:
+            pass  # Sloupec jiz existuje
+        # Migrace: presunout existujici jmena do tabulky hraci
+        self.cursor.execute("INSERT OR IGNORE INTO hraci (jmeno) SELECT DISTINCT jmeno FROM vysledky WHERE jmeno IS NOT NULL")
+        self.cursor.execute("UPDATE vysledky SET hrac_id = (SELECT id FROM hraci WHERE hraci.jmeno = vysledky.jmeno) WHERE hrac_id IS NULL")
         self.conn.commit()
 
         # Hlavni menu
@@ -207,9 +228,13 @@ class Minesweeper:
         jmeno = simpledialog.askstring("Jmeno", "Zadej své jmeno:")
         if not jmeno:
             jmeno = "Neznamy"
+        # Registrace hrace (pokud jeste neexistuje)
+        self.cursor.execute("INSERT OR IGNORE INTO hraci (jmeno) VALUES (?)", (jmeno,))
+        self.cursor.execute("SELECT id FROM hraci WHERE jmeno = ?", (jmeno,))
+        hrac_id = self.cursor.fetchone()[0]
         self.cursor.execute(
-            "INSERT INTO vysledky (jmeno, skore, cas, obtiznost, vysledek) VALUES (?, ?, ?, ?, ?)",
-            (jmeno, skore, cas, f"{self.velikost}x{self.velikost}", vysledek),
+            "INSERT INTO vysledky (jmeno, skore, cas, obtiznost, vysledek, hrac_id) VALUES (?, ?, ?, ?, ?, ?)",
+            (jmeno, skore, cas, f"{self.velikost}x{self.velikost}", vysledek, hrac_id),
         )
         self.conn.commit()
         self.aktualizuj_scoreboard()
