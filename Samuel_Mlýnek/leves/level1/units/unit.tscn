@@ -1,6 +1,9 @@
-[gd_scene format=3 uid="uid://d1u0wvwbtvj0w"]
+[gd_scene load_steps=2 format=3 uid="uid://d1u0wvwbtvj0w"]
+
+[ext_resource type="Script" uid="uid://crrg342eiylkb" path="res://leves/level1/units/unit.gd" id="1_d36gg"]
 
 [node name="Node2D" type="Node2D"]
+script = ExtResource("1_d36gg")
 
 [node name="ColorRect" type="ColorRect" parent="."]
 anchors_preset = 8
@@ -14,3 +17,13 @@ offset_right = 20.0
 offset_bottom = 20.0
 grow_horizontal = 2
 grow_vertical = 2
+
+[node name="ProgressBar" type="ProgressBar" parent="."]
+modulate = Color(0.45983726, 0.68509936, 0.084485255, 1)
+offset_left = -20.0
+offset_top = -30.0
+offset_right = 20.0
+offset_bottom = -24.0
+max_value = 10.0
+value = 10.0
+show_percentage = false

@@ -10,6 +10,7 @@ var selected_hex: Vector2i = Vector2i(-999, -999)
 var hovered_hex : Vector2i = Vector2i(-999, -999)
 var hex_centers := {} # Vector2i -> Vector
 var reachable_hexes: Array[Vector2i] = []
+var highlighted = []
 const HEX_DIRECTIONS = [
 	Vector2i(1, 0),
 	Vector2i(1, -1),
@@ -18,6 +19,9 @@ const HEX_DIRECTIONS = [
 	Vector2i(-1, 1),
 	Vector2i(0, 1),
 ]
+
+signal hex_clicked(hex: Vector2i)
+
 
 # --- positioning equations ---#
 
@@ -83,6 +87,15 @@ func hex_points(center: Vector2) -> PackedVector2Array:
 	pts.append(pts[0])
 	return pts
 
+func hex_distance(a: Vector2i, b: Vector2i) -> int:
+	var dq = a.x - b.x
+	var dr = a.y - b.y
+	var ds = (-a.x - a.y) - (-b.x - b.y)
+	return max(abs(dq), abs(dr), abs(ds))
+
+func highlight_hexes(list):
+	highlighted = list
+	queue_redraw()
 # --- Unit shit --- #
 
 func get_neighbors(hex: Vector2i) -> Array:
@@ -94,25 +107,26 @@ func get_neighbors(hex: Vector2i) -> Array:
 	return result
 
 func compute_reachable(unit):
-	reachable_hexes.clear()
-	reachable_hexes.append(unit.hex)
 
-	var frontier = [unit.hex]
+	reachable_hexes.clear()
+	reachable_hexes.append(unit.hex_position)
+
+	var frontier = [unit.hex_position]
 
 	for i in range(unit.move_points):
 		var new_frontier = []
+
 		for hex in frontier:
 			for n in get_neighbors(hex):
 				if not reachable_hexes.has(n):
 					reachable_hexes.append(n)
 					new_frontier.append(n)
+
 		frontier = new_frontier
 
-# --- functional thingies --- #
+	highlight_hexes(reachable_hexes)
 
-func _ready() -> void:
-	for h in logic.grid.keys():
-		hex_centers[h] = hex_to_pixel(h)
+# --- functional thingies --- #
 
 func _input(event):
 	if event is InputEventMouseButton and event.pressed:
@@ -138,7 +152,13 @@ func _input(event):
 			if hovered_hex != Vector2i(-999, -999):
 				hovered_hex = Vector2i(-999, -999)
 				queue_redraw()
-
+				
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		var mouse_pos = get_global_mouse_position()
+		var hex = pixel_to_hex(mouse_pos)
+		
+		logic.on_hex_clicked(hex)
+		
 func _draw():
 	for h in logic.grid.keys():
 		var center = hex_to_pixel(h)
@@ -152,15 +172,21 @@ func _draw():
 		elif h == hovered_hex:
 			railing_color = Color.BLUE
 			railing_magnitude = 2
-		if reachable_hexes.has(h):
-			color = Color.CORNFLOWER_BLUE
+			if logic.grid[h]["city"]:
+				color = Color.ORANGE
+				
+		if logic.grid[h]["city"]:
+			var owner = logic.grid[h]["owner"]
+
+			if owner == "player":
+				color = Color(0.2,0.4,1)
+			elif owner == "enemy":
+				color = Color(1,0.2,0.2)
+			else:
+				color = Color.ORANGE
 			
 		draw_polygon(hex_points(center),PackedColorArray([color]))
 		draw_polyline(hex_points(center), railing_color, railing_magnitude)
-		
-	for hex in reachable_hexes:
-		var p = hex_to_pixel(hex)
-		draw_colored_polygon(
-			hex_points(p),
-			Color(0.3, 0.6, 1.0, 0.4)
-		)
+	for hex in highlighted:
+		var pos = hex_to_pixel(hex)
+		draw_circle(pos, 20, Color(0,1,0,0.4))

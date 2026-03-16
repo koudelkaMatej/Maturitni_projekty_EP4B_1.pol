@@ -1,8 +1,11 @@
-[gd_scene load_steps=4 format=3 uid="uid://5osyhbdcxtx4"]
+[gd_scene load_steps=7 format=3 uid="uid://5osyhbdcxtx4"]
 
 [ext_resource type="Script" uid="uid://b1ik1p04ol84n" path="res://leves/level1/game_logic.gd" id="1_c1cq2"]
 [ext_resource type="Script" uid="uid://bo3oqddq2dpik" path="res://leves/level1/hex_overlay.gd" id="1_s0dnb"]
 [ext_resource type="Script" uid="uid://c8s4mjax1nfk3" path="res://leves/level1/unit.gd" id="2_mpcs8"]
+[ext_resource type="PackedScene" uid="uid://d1u0wvwbtvj0w" path="res://leves/level1/units/unit.tscn" id="4_mu70v"]
+[ext_resource type="PackedScene" uid="uid://crxvc78ww3m2a" path="res://leves/level1/city_menu.tscn" id="5_y7ibt"]
+[ext_resource type="PackedScene" uid="uid://8bsfbwwucuad" path="res://UI_control_scenes/Options.tscn" id="6_g8o6o"]
 
 [node name="Level01" type="Node2D"]
 
@@ -16,3 +19,86 @@ script = ExtResource("2_mpcs8")
 
 [node name="GameLogic" type="Node" parent="."]
 script = ExtResource("1_c1cq2")
+unit_scene = ExtResource("4_mu70v")
+city_menu_scene = ExtResource("5_y7ibt")
+options_menu = ExtResource("6_g8o6o")
+
+[node name="UI" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="CityButton" type="Button" parent="UI"]
+layout_mode = 0
+offset_left = 1089.0
+offset_top = 14.0
+offset_right = 1139.0
+offset_bottom = 64.0
+text = "City"
+
+[node name="CityMenuLayer" type="Control" parent="UI"]
+anchors_preset = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="OptionLayer" type="Control" parent="UI"]
+anchors_preset = 0
+offset_left = 331.0
+offset_top = 174.0
+offset_right = 372.0
+offset_bottom = 208.0
+
+[node name="Options" type="Button" parent="UI"]
+layout_mode = 0
+offset_left = 1041.0
+offset_top = 77.0
+offset_right = 1141.0
+offset_bottom = 108.0
+text = "Settings"
+
+[node name="MainMenu_Button" type="Button" parent="UI"]
+layout_mode = 0
+offset_left = 1041.0
+offset_top = 114.0
+offset_right = 1141.0
+offset_bottom = 145.0
+text = "Main menu"
+
+[node name="TurnButton" type="Button" parent="UI"]
+layout_mode = 0
+offset_left = 1089.0
+offset_top = 589.0
+offset_right = 1139.0
+offset_bottom = 639.0
+text = "Turn"
+
+[node name="Save_button" type="Button" parent="UI"]
+layout_mode = 0
+offset_left = 1041.0
+offset_top = 152.0
+offset_right = 1141.0
+offset_bottom = 183.0
+text = "save game"
+
+[node name="Load_button" type="Button" parent="UI"]
+layout_mode = 0
+offset_left = 1041.0
+offset_top = 188.0
+offset_right = 1141.0
+offset_bottom = 219.0
+text = "load Game"
+
+[node name="GoldLabel" type="Label" parent="UI"]
+layout_mode = 0
+offset_left = 982.0
+offset_top = 596.0
+offset_right = 1077.0
+offset_bottom = 630.0
+
+[connection signal="pressed" from="UI/CityButton" to="GameLogic" method="_on_city_button_pressed"]
+[connection signal="pressed" from="UI/Options" to="GameLogic" method="_on_options_pressed"]
+[connection signal="pressed" from="UI/MainMenu_Button" to="GameLogic" method="_on_main_menu_button_pressed"]
+[connection signal="pressed" from="UI/TurnButton" to="GameLogic" method="_on_turn_button_pressed"]
+[connection signal="pressed" from="UI/Save_button" to="GameLogic" method="_on_save_button_pressed"]
+[connection signal="pressed" from="UI/Load_button" to="GameLogic" method="_on_load_button_pressed"]
