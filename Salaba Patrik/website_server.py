@@ -5,20 +5,23 @@ import hashlib
 import secrets
 import json
 import os
- 
+
 DB_NAME = "snake_game.db"
- 
+
 # Aktivní sessions: { token: username }
 sessions = {}
- 
+
+
 def get_conn():
     conn = sqlite3.connect(DB_NAME)
     conn.row_factory = sqlite3.Row
     return conn
- 
+
+
 def init_db():
     conn = get_conn()
     c = conn.cursor()
+
     c.execute("""
         CREATE TABLE IF NOT EXISTS uzivatele (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -27,6 +30,7 @@ def init_db():
             datum_registrace TEXT DEFAULT (datetime('now','localtime'))
         )
     """)
+
     c.execute("""
         CREATE TABLE IF NOT EXISTS hry (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -35,18 +39,21 @@ def init_db():
             username TEXT
         )
     """)
-    # Přidá sloupec username pokud chybí ve staré databázi
+
     try:
         c.execute("ALTER TABLE hry ADD COLUMN username TEXT")
         conn.commit()
     except sqlite3.OperationalError:
-        pass  # sloupec už existuje
+        pass
+
     conn.commit()
     conn.close()
- 
+
+
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
- 
+
+
 def get_session_user(cookie_header):
     if not cookie_header:
         return None
@@ -56,17 +63,18 @@ def get_session_user(cookie_header):
             token = part[8:]
             return sessions.get(token)
     return None
- 
+
+
 def uloz_session(username, token):
-    with open("session.json", "w") as f:
+    with open("session.json", "w", encoding="utf-8") as f:
         json.dump({"username": username, "token": token}, f)
- 
+
+
 def smaz_session():
     if os.path.exists("session.json"):
         os.remove("session.json")
- 
-# ── HTML šablony ──────────────────────────────────────────────────────────────
- 
+
+
 BASE_STYLE = """
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -154,7 +162,8 @@ BASE_STYLE = """
   .logged-in-info { text-align: center; color: #86efac; font-size: 0.85rem; margin-bottom: 16px; padding: 8px; background: rgba(34,197,94,0.08); border-radius: 8px; }
 </style>
 """
- 
+
+
 def nav_html(current_user):
     if current_user:
         return f"""
@@ -170,7 +179,8 @@ def nav_html(current_user):
           <a href="/login">Přihlásit se</a>
           <a href="/register">Registrace</a>
         </nav>"""
- 
+
+
 def page(title, body, current_user=None):
     return f"""<!DOCTYPE html>
 <html lang="cs">
@@ -189,29 +199,27 @@ def page(title, body, current_user=None):
 </div>
 </body>
 </html>"""
- 
-# ── Stránky ───────────────────────────────────────────────────────────────────
- 
+
+
 def page_leaderboard(current_user):
     conn = get_conn()
     rows = conn.execute(
         "SELECT skore, datum, username FROM hry ORDER BY skore DESC LIMIT 50"
     ).fetchall()
     conn.close()
- 
+
     medals = ["🥇", "🥈", "🥉"]
- 
-    info = ""
+
     if current_user:
         info = f'<div class="logged-in-info">Přihlášen jako <strong>{current_user}</strong> – tvoje skóre se ukládají automaticky</div>'
     else:
         info = '<div class="logged-in-info" style="color:#94a3b8;">Nejsi přihlášen – skóre se ukládají anonymně</div>'
- 
+
     if rows:
         table = """<table>
           <tr><th>Pořadí</th><th>Hráč</th><th>Skóre</th><th>Datum</th></tr>"""
         for i, row in enumerate(rows, 1):
-            medal = medals[i-1] if i <= 3 else f"{i}."
+            medal = medals[i - 1] if i <= 3 else f"{i}."
             uname = row["username"] or "?"
             you = f' <span class="badge badge-you">ty</span>' if uname == current_user else ""
             table += f"""
@@ -224,13 +232,14 @@ def page_leaderboard(current_user):
         table += "</table>"
     else:
         table = '<div class="empty">Zatím nejsou žádné výsledky.</div>'
- 
+
     return page("Žebříček", info + table, current_user)
- 
+
+
 def page_my_scores(current_user):
     if not current_user:
         return None
- 
+
     conn = get_conn()
     rows = conn.execute(
         "SELECT skore, datum FROM hry WHERE username=? ORDER BY skore DESC",
@@ -240,15 +249,15 @@ def page_my_scores(current_user):
         "SELECT MAX(skore) as m FROM hry WHERE username=?", (current_user,)
     ).fetchone()
     conn.close()
- 
+
     best_score = best["m"] or 0
- 
+
     html = f"""
     <div style="margin-bottom:20px;padding:16px;background:rgba(34,197,94,0.08);border-radius:12px;border:1px solid rgba(34,197,94,0.2);">
       <div style="color:#94a3b8;font-size:0.85rem;margin-bottom:4px;">Tvoje nejlepší skóre</div>
       <div style="font-size:2rem;font-weight:bold;color:#22c55e;">{best_score}</div>
     </div>"""
- 
+
     if rows:
         html += """<table>
           <tr><th>#</th><th>Skóre</th><th>Datum</th></tr>"""
@@ -257,9 +266,10 @@ def page_my_scores(current_user):
         html += "</table>"
     else:
         html += '<div class="empty">Zatím nemáš žádné výsledky.</div>'
- 
+
     return page("Moje skóre", html, current_user)
- 
+
+
 def page_login(error=None):
     err = f'<div class="error">{error}</div>' if error else ""
     body = f"""<div class="form-card">
@@ -273,7 +283,8 @@ def page_login(error=None):
       <div class="form-footer">Nemáš účet? <a href="/register">Registruj se</a></div>
     </div>"""
     return page("Přihlášení", body)
- 
+
+
 def page_register(error=None):
     err = f'<div class="error">{error}</div>' if error else ""
     body = f"""<div class="form-card">
@@ -288,11 +299,10 @@ def page_register(error=None):
       <div class="form-footer">Máš účet? <a href="/login">Přihlásit se</a></div>
     </div>"""
     return page("Registrace", body)
- 
-# ── HTTP Handler ──────────────────────────────────────────────────────────────
- 
+
+
 class Handler(BaseHTTPRequestHandler):
- 
+
     def send_html(self, html, status=200, extra_headers=None):
         encoded = html.encode("utf-8")
         self.send_response(status)
@@ -302,7 +312,7 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_header(k, v)
         self.end_headers()
         self.wfile.write(encoded)
- 
+
     def redirect(self, location, extra_headers=None):
         self.send_response(302)
         self.send_header("Location", location)
@@ -310,39 +320,39 @@ class Handler(BaseHTTPRequestHandler):
             for k, v in extra_headers.items():
                 self.send_header(k, v)
         self.end_headers()
- 
+
     def read_body(self):
         length = int(self.headers.get("Content-Length", 0))
         return self.rfile.read(length).decode("utf-8")
- 
+
     def current_user(self):
         return get_session_user(self.headers.get("Cookie"))
- 
+
     def do_GET(self):
         path = urlparse(self.path).path
         user = self.current_user()
- 
+
         if path == "/":
             self.send_html(page_leaderboard(user))
- 
+
         elif path == "/login":
             if user:
                 self.redirect("/")
             else:
                 self.send_html(page_login())
- 
+
         elif path == "/register":
             if user:
                 self.redirect("/")
             else:
                 self.send_html(page_register())
- 
+
         elif path == "/moje":
             if not user:
                 self.redirect("/login")
             else:
                 self.send_html(page_my_scores(user))
- 
+
         elif path == "/logout":
             cookie = self.headers.get("Cookie", "")
             for part in cookie.split(";"):
@@ -352,27 +362,30 @@ class Handler(BaseHTTPRequestHandler):
                     sessions.pop(token, None)
             smaz_session()
             self.redirect("/", {"Set-Cookie": "session=; Max-Age=0; Path=/"})
- 
+
         else:
             self.send_response(404)
             self.end_headers()
- 
+
     def do_POST(self):
         path = urlparse(self.path).path
         body = self.read_body()
         params = parse_qs(body)
- 
+
         def p(name):
             return params.get(name, [""])[0].strip()
- 
+
         if path == "/login":
             username = p("username")
             password = p("password")
+
             conn = get_conn()
             row = conn.execute(
-                "SELECT password_hash FROM uzivatele WHERE username=?", (username,)
+                "SELECT password_hash FROM uzivatele WHERE username=?",
+                (username,)
             ).fetchone()
             conn.close()
+
             if row and row["password_hash"] == hash_password(password):
                 token = secrets.token_hex(32)
                 sessions[token] = username
@@ -380,12 +393,12 @@ class Handler(BaseHTTPRequestHandler):
                 self.redirect("/", {"Set-Cookie": f"session={token}; Path=/; HttpOnly"})
             else:
                 self.send_html(page_login("Špatné jméno nebo heslo."))
- 
+
         elif path == "/register":
             username = p("username")
             password = p("password")
             password2 = p("password2")
- 
+
             if len(username) < 3:
                 self.send_html(page_register("Jméno musí mít alespoň 3 znaky."))
                 return
@@ -395,7 +408,7 @@ class Handler(BaseHTTPRequestHandler):
             if password != password2:
                 self.send_html(page_register("Hesla se neshodují."))
                 return
- 
+
             conn = get_conn()
             try:
                 conn.execute(
@@ -404,6 +417,7 @@ class Handler(BaseHTTPRequestHandler):
                 )
                 conn.commit()
                 conn.close()
+
                 token = secrets.token_hex(32)
                 sessions[token] = username
                 uloz_session(username, token)
@@ -411,21 +425,16 @@ class Handler(BaseHTTPRequestHandler):
             except sqlite3.IntegrityError:
                 conn.close()
                 self.send_html(page_register("Toto jméno je již obsazené."))
- 
+
         else:
             self.send_response(404)
             self.end_headers()
- 
+
     def log_message(self, format, *args):
         pass
- 
- 
-# ── Start ─────────────────────────────────────────────────────────────────────
- 
+
+
 if __name__ == "__main__":
     init_db()
     print("Server běží na http://localhost:8000")
     HTTPServer(("localhost", 8000), Handler).serve_forever()
-
-server = HTTPServer(("localhost", 8000), MyServer)
-server.serve_forever()
