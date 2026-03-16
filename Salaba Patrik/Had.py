@@ -1,15 +1,17 @@
-import turtle          # knihovna na jednoduchou grafiku a hry
-import random          # kvůli náhodnému spawnování jídla
-import sqlite3         # práce s databází SQLite
-import json            # čtení session souboru
-import os              # kontrola existence souboru
-from datetime import datetime   # kvůli uložení aktuálního data a času
+import turtle
+import random
+import sqlite3
+import json
+import os
+from datetime import datetime
+from typing import Optional
 
 # =========================
 #  Databáze
 # =========================
 
 DB_NAME = "snake_game.db"
+
 
 def vytvor_databazi():
     conn = sqlite3.connect(DB_NAME)
@@ -22,37 +24,38 @@ def vytvor_databazi():
             username TEXT
         )
     """)
-    # Přidá sloupec username pokud chybí ve staré databázi
     try:
         c.execute("ALTER TABLE hry ADD COLUMN username TEXT")
         conn.commit()
     except sqlite3.OperationalError:
-        pass  # sloupec už existuje
+        pass
     conn.commit()
     conn.close()
 
-def nacti_prihlaseneho_hrace() -> str | None:
-    # přečte jméno přihlášeného hráče ze souboru session.json
-    # tento soubor vytvoří website_server.py po přihlášení
+
+def nacti_prihlaseneho_hrace() -> Optional[str]:
     if os.path.exists("session.json"):
         try:
-            with open("session.json", "r") as f:
+            with open("session.json", "r", encoding="utf-8") as f:
                 data = json.load(f)
                 return data.get("username")
         except Exception:
             return None
     return None
 
+
 def uloz_skore(skore: int):
-    # zjistí přihlášeného hráče
     username = nacti_prihlaseneho_hrace()
 
     conn = sqlite3.connect(DB_NAME)
     c = conn.cursor()
-    c.execute("INSERT INTO hry (skore, datum, username) VALUES (?, ?, ?)",
-              (skore, datetime.now().strftime("%Y-%m-%d %H:%M:%S"), username))
+    c.execute(
+        "INSERT INTO hry (skore, datum, username) VALUES (?, ?, ?)",
+        (skore, datetime.now().strftime("%Y-%m-%d %H:%M:%S"), username)
+    )
     conn.commit()
     conn.close()
+
 
 def nacti_high_score() -> int:
     conn = sqlite3.connect(DB_NAME)
@@ -62,10 +65,11 @@ def nacti_high_score() -> int:
     conn.close()
     return int(vysledek)
 
+
 vytvor_databazi()
 
 # =========================
-#  barva (gradient)
+#  Barvy / utility
 # =========================
 
 def ztmav_barvu(hex_color: str, faktor: float) -> str:
@@ -78,11 +82,13 @@ def ztmav_barvu(hex_color: str, faktor: float) -> str:
     b = max(0, int(b * faktor))
     return f"#{r:02x}{g:02x}{b:02x}"
 
+
 def smer_na_heading(direction: str) -> int:
     return {"nahoru": 90, "dolu": 270, "doleva": 180, "doprava": 0}.get(direction, 0)
 
+
 # =========================
-#  Skins (1/2/3)
+#  Skins
 # =========================
 
 SKINS = {
@@ -126,7 +132,7 @@ skin = SKINS[skin_id]
 # =========================
 
 okno = turtle.Screen()
-okno.title("Hadi hra doufam ze si to nevytahnu")
+okno.title("Hadi hra")
 okno.bgcolor(skin["bg"])
 okno.setup(width=600, height=600)
 okno.tracer(0)
@@ -161,22 +167,27 @@ info_text.penup()
 info_text.hideturtle()
 info_text.goto(0, 230)
 
-# text pro přihlášeného hráče
 hrac_text = turtle.Turtle()
 hrac_text.speed(0)
 hrac_text.penup()
 hrac_text.hideturtle()
 hrac_text.goto(0, -260)
 
+
 def update_skore():
     skore_text.clear()
-    skore_text.write(f"Skóre: {skore}   High Score: {high_score}",
-                     align="center", font=("Arial", 16, "bold"))
+    skore_text.write(
+        f"Skóre: {skore}   High Score: {high_score}",
+        align="center",
+        font=("Arial", 16, "bold")
+    )
+
 
 def update_info(text=""):
     info_text.clear()
     if text:
         info_text.write(text, align="center", font=("Arial", 12, "normal"))
+
 
 def update_hrac_text():
     hrac_text.clear()
@@ -186,7 +197,12 @@ def update_hrac_text():
         hrac_text.write(f"Hráč: {username}", align="center", font=("Arial", 11, "normal"))
     else:
         hrac_text.color("#888888")
-        hrac_text.write("Nepřihlášen – přihlas se na localhost:8000", align="center", font=("Arial", 11, "normal"))
+        hrac_text.write(
+            "Nepřihlášen – přihlas se na localhost:8000",
+            align="center",
+            font=("Arial", 11, "normal")
+        )
+
 
 ramecek = turtle.Turtle()
 ramecek.hideturtle()
@@ -200,6 +216,7 @@ mrizka.speed(0)
 mrizka.pensize(1)
 mrizka.penup()
 
+
 def kresli_ramecek():
     ramecek.clear()
     ramecek.color(skin["frame"])
@@ -209,6 +226,7 @@ def kresli_ramecek():
         ramecek.forward(MAX_XY * 2)
         ramecek.left(90)
     ramecek.penup()
+
 
 def kresli_mrizku(krok=40):
     mrizka.clear()
@@ -223,6 +241,7 @@ def kresli_mrizku(krok=40):
         mrizka.pendown()
         mrizka.goto(MAX_XY, y)
         mrizka.penup()
+
 
 # =========================
 #  Menu
@@ -247,6 +266,7 @@ tlacitko_text = turtle.Turtle()
 tlacitko_text.hideturtle()
 tlacitko_text.penup()
 
+
 def vykresli_menu():
     global high_score
 
@@ -267,10 +287,11 @@ def vykresli_menu():
     tlacitko.color(skin["frame"])
     tlacitko_text.color(skin["text"])
 
-    menu_napis.write(" Hadi Gameska! ", align="center", font=("Arial", 28, "bold"))
+    menu_napis.write("Hadi Gameska!", align="center", font=("Arial", 28, "bold"))
     high_score_text.write(f"High Score: {high_score}", align="center", font=("Arial", 18, "normal"))
 
     tlacitko.goto(-70, -70)
+    tlacitko.setheading(0)
     tlacitko.pendown()
     tlacitko.begin_fill()
     tlacitko.fillcolor("#b6f2c3" if skin_id == 1 else "#2a2a3a" if skin_id == 2 else "#1d2a22")
@@ -287,6 +308,7 @@ def vykresli_menu():
 
     update_info("Skins: 1 / 2 / 3   |   Pauza (P)  Restart (R)")
     update_hrac_text()
+
 
 # =========================
 #  Herní objekty
@@ -315,11 +337,13 @@ jidlo_ikona = turtle.Turtle()
 jidlo_ikona.hideturtle()
 jidlo_ikona.penup()
 
+
 def nastav_jidlo_ikonu():
     jidlo_ikona.clear()
     jidlo_ikona.color(skin["food"])
     jidlo_ikona.goto(jidlo.xcor(), jidlo.ycor() - 10)
     jidlo_ikona.write(skin["food_icon"], align="center", font=("Arial", 18, "bold"))
+
 
 oko_L = turtle.Turtle()
 oko_L.hideturtle()
@@ -344,6 +368,7 @@ jazyk.shape("square")
 jazyk.shapesize(0.10, 0.55)
 jazyk.color(skin["food"])
 jazyk.penup()
+
 
 def aktualizuj_oblicej_hada():
     if not hra_bezi:
@@ -388,8 +413,10 @@ def aktualizuj_oblicej_hada():
         oko_P.goto(x + 6, y + 6)
         jazyk.hideturtle()
 
+
 telo = []
 telo_smer = []
+
 
 def vycisti_telo():
     global telo, telo_smer
@@ -399,10 +426,12 @@ def vycisti_telo():
     telo = []
     telo_smer = []
 
+
 def nahodna_pozice_na_mrizce():
-    x = random.randrange(-MAX_XY + 10, MAX_XY - 10, VELIKOST_KROKU)
-    y = random.randrange(-MAX_XY + 10, MAX_XY - 10, VELIKOST_KROKU)
+    x = random.randrange(-280, 281, VELIKOST_KROKU)
+    y = random.randrange(-280, 281, VELIKOST_KROKU)
     return x, y
+
 
 def spawn_jidlo():
     while True:
@@ -418,6 +447,7 @@ def spawn_jidlo():
             jidlo.goto(x, y)
             nastav_jidlo_ikonu()
             return
+
 
 def aplikuj_skin_na_objekty():
     okno.bgcolor(skin["bg"])
@@ -439,6 +469,7 @@ def aplikuj_skin_na_objekty():
         aktualizuj_oblicej_hada()
         update_skore()
 
+
 def nastav_skin(nove_id: int):
     global skin_id, skin
     if nove_id not in SKINS:
@@ -449,9 +480,18 @@ def nastav_skin(nove_id: int):
     if not hra_bezi:
         vykresli_menu()
 
-def skin_1(): nastav_skin(1)
-def skin_2(): nastav_skin(2)
-def skin_3(): nastav_skin(3)
+
+def skin_1():
+    nastav_skin(1)
+
+
+def skin_2():
+    nastav_skin(2)
+
+
+def skin_3():
+    nastav_skin(3)
+
 
 # =========================
 #  Ovládání
@@ -461,17 +501,21 @@ def jdi_nahoru():
     if hlava.direction != "dolu":
         hlava.direction = "nahoru"
 
+
 def jdi_dolu():
     if hlava.direction != "nahoru":
         hlava.direction = "dolu"
+
 
 def jdi_doleva():
     if hlava.direction != "doprava":
         hlava.direction = "doleva"
 
+
 def jdi_doprava():
     if hlava.direction != "doleva":
         hlava.direction = "doprava"
+
 
 def toggle_pauza():
     global pauza
@@ -480,10 +524,12 @@ def toggle_pauza():
     pauza = not pauza
     update_info("PAUZA (P) • Restart (R) • Skins 1/2/3" if pauza else "Pauza (P) • Restart (R) • Skins 1/2/3")
 
+
 def restart():
     if hra_bezi:
         game_over(do_menu=False)
         spustit_hru()
+
 
 okno.listen()
 okno.onkeypress(jdi_nahoru, "Up")
@@ -508,7 +554,9 @@ def klik_na_tlacitko(x, y):
     if not hra_bezi and (-70 <= x <= 70 and -70 <= y <= -15):
         spustit_hru()
 
+
 okno.onclick(klik_na_tlacitko)
+
 
 def spustit_hru():
     global hra_bezi, pauza, skore, rychlost_ms, high_score
@@ -541,6 +589,7 @@ def spustit_hru():
 
     tick()
 
+
 def game_over(do_menu=True):
     global hra_bezi, skore, high_score
 
@@ -564,6 +613,7 @@ def game_over(do_menu=True):
     if do_menu:
         vykresli_menu()
 
+
 def pohyb_hlavy():
     if hlava.direction == "nahoru":
         hlava.sety(hlava.ycor() + VELIKOST_KROKU)
@@ -574,9 +624,11 @@ def pohyb_hlavy():
     elif hlava.direction == "doprava":
         hlava.setx(hlava.xcor() + VELIKOST_KROKU)
 
+
 def zrychli():
     global rychlost_ms
     rychlost_ms = max(45, 90 - (skore // 50) * 5)
+
 
 def tick():
     global skore
@@ -636,11 +688,12 @@ def tick():
     for seg in telo:
         if seg.distance(hlava) < 1:
             game_over(do_menu=True)
-        okno.update()
-        return
+            okno.update()
+            return
 
     okno.update()
     okno.ontimer(tick, rychlost_ms)
+
 
 # =========================
 #  Start programu
