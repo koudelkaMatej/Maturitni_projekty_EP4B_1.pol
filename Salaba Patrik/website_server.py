@@ -1,27 +1,81 @@
-from http.server import BaseHTTPRequestHandler, HTTPServer
-from urllib.parse import parse_qs, urlparse
-import sqlite3
-import hashlib
-import secrets
-import json
-import os
+from http.server import BaseHTTPRequestHandler, HTTPServer   # jednoduchý vestavěný HTTP server v Pythonu
+from urllib.parse import parse_qs, urlparse                 # zpracování URL a formulářových dat
+import sqlite3                                              # SQLite databáze
+import hashlib                                              # hashování hesel
+import secrets                                              # generování bezpečných session tokenů
+import json                                                 # ukládání session do JSON souboru
+import os                                                   # práce se soubory
+
+# ============================================================
+# ===================== ZÁKLADNÍ NASTAVENÍ ===================
+# ============================================================
+# Tohle je název databázového souboru.
+# Používá se stejná databáze jako ve hře.
+# ============================================================
 
 DB_NAME = "snake_game.db"
 
-# Aktivní sessions: { token: username }
+# ============================================================
+# ======================= SESSION PAMĚŤ ======================
+# ============================================================
+# Aktivní sessions jsou uložené v paměti serveru.
+# Formát:
+# { token: username }
+#
+# Například:
+# {
+#   "a3f8c1...": "salaba"
+# }
+#
+# Když se uživatel přihlásí, dostane token.
+# Ten token se uloží:
+# - do cookie v prohlížeči
+# - do tohoto slovníku v paměti serveru
+# ============================================================
+
 sessions = {}
 
 
 def get_conn():
+    # --------------------------------------------------------
+    # Vytvoří připojení k SQLite databázi.
+    #
+    # row_factory = sqlite3.Row znamená, že můžeme číst
+    # výsledky i podle názvů sloupců:
+    # row["username"], row["skore"], ...
+    # místo jen row[0], row[1], ...
+    # --------------------------------------------------------
     conn = sqlite3.connect(DB_NAME)
     conn.row_factory = sqlite3.Row
     return conn
 
 
 def init_db():
+    # --------------------------------------------------------
+    # Inicializace databáze.
+    #
+    # Vytvoří dvě tabulky:
+    # 1) uzivatele
+    # 2) hry
+    #
+    # uzivatele:
+    # - id
+    # - username
+    # - password_hash
+    # - datum_registrace
+    #
+    # hry:
+    # - id
+    # - skore
+    # - datum
+    # - username
+    #
+    # username v tabulce hry slouží jako vazba na uživatele.
+    # --------------------------------------------------------
     conn = get_conn()
     c = conn.cursor()
 
+    # tabulka uživatelů
     c.execute("""
         CREATE TABLE IF NOT EXISTS uzivatele (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -31,6 +85,7 @@ def init_db():
         )
     """)
 
+    # tabulka her
     c.execute("""
         CREATE TABLE IF NOT EXISTS hry (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -40,6 +95,13 @@ def init_db():
         )
     """)
 
+    # --------------------------------------------------------
+    # Tento blok řeší případ, kdy existuje starší verze tabulky
+    # hry bez sloupce username.
+    #
+    # Pokud tam username není, pokusí se ho přidat.
+    # Pokud už existuje, chyba se ignoruje.
+    # --------------------------------------------------------
     try:
         c.execute("ALTER TABLE hry ADD COLUMN username TEXT")
         conn.commit()
@@ -51,33 +113,78 @@ def init_db():
 
 
 def hash_password(password):
+    # --------------------------------------------------------
+    # Heslo se neukládá přímo, ale jako hash.
+    #
+    # Hash = jednosměrný otisk hesla.
+    # Používá se SHA-256.
+    #
+    # Výhoda:
+    # kdyby někdo získal databázi, nevidí přímo hesla.
+    # --------------------------------------------------------
     return hashlib.sha256(password.encode()).hexdigest()
 
 
 def get_session_user(cookie_header):
+    # --------------------------------------------------------
+    # Z cookie hlavičky zjistí přihlášeného uživatele.
+    #
+    # Cookie může vypadat třeba takto:
+    # "session=abc123xyz; theme=dark"
+    #
+    # Funkce:
+    # 1) najde session token
+    # 2) podívá se do sessions slovníku
+    # 3) vrátí username nebo None
+    # --------------------------------------------------------
     if not cookie_header:
         return None
+
     for part in cookie_header.split(";"):
         part = part.strip()
         if part.startswith("session="):
             token = part[8:]
             return sessions.get(token)
+
     return None
 
 
 def uloz_session(username, token):
+    # --------------------------------------------------------
+    # Uloží session i do souboru session.json
+    #
+    # Díky tomu si může desktop hra načíst uživatele
+    # a ukládat skóre pod jeho jménem.
+    # --------------------------------------------------------
     with open("session.json", "w", encoding="utf-8") as f:
         json.dump({"username": username, "token": token}, f)
 
 
 def smaz_session():
+    # --------------------------------------------------------
+    # Smaže session.json při odhlášení.
+    # --------------------------------------------------------
     if os.path.exists("session.json"):
         os.remove("session.json")
 
 
+# ============================================================
+# =========================== CSS ============================
+# ============================================================
+# BASE_STYLE obsahuje kompletní CSS stylování webu.
+#
+# Je to HTML <style> blok uložený jako víceřádkový string.
+# Ten se pak vkládá do každé stránky.
+#
+# Díky tomu:
+# - nemusíš mít externí CSS soubor
+# - všechno je v jednom Python souboru
+# ============================================================
+
 BASE_STYLE = """
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
+
   body {
     font-family: Arial, sans-serif;
     background: linear-gradient(135deg, #0f172a, #1e293b);
@@ -85,20 +192,41 @@ BASE_STYLE = """
     min-height: 100vh;
     display: flex;
     justify-content: center;
-    align-items: center;
+    align-items: flex-start;
     padding: 20px;
   }
+
   .container {
     width: 100%;
-    max-width: 720px;
+    max-width: 980px;
     background: rgba(255,255,255,0.08);
     border: 1px solid rgba(255,255,255,0.15);
     border-radius: 20px;
     padding: 32px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.25);
   }
-  h1 { color: #22c55e; font-size: 2rem; text-align: center; margin-bottom: 8px; }
-  .subtitle { text-align: center; color: #94a3b8; margin-bottom: 24px; }
-  nav { display: flex; gap: 10px; justify-content: center; margin-bottom: 24px; flex-wrap: wrap; }
+
+  h1 {
+    color: #22c55e;
+    font-size: 2rem;
+    text-align: center;
+    margin-bottom: 8px;
+  }
+
+  .subtitle {
+    text-align: center;
+    color: #94a3b8;
+    margin-bottom: 24px;
+  }
+
+  nav {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+  }
+
   nav a {
     color: #86efac;
     text-decoration: none;
@@ -108,10 +236,19 @@ BASE_STYLE = """
     font-size: 0.9rem;
     transition: 0.2s;
   }
+
   nav a:hover { background: rgba(34,197,94,0.15); }
   nav a.active { background: rgba(34,197,94,0.25); }
+
   .form-group { margin-bottom: 16px; }
-  label { display: block; color: #94a3b8; font-size: 0.85rem; margin-bottom: 6px; }
+
+  label {
+    display: block;
+    color: #94a3b8;
+    font-size: 0.85rem;
+    margin-bottom: 6px;
+  }
+
   input[type=text], input[type=password] {
     width: 100%;
     padding: 10px 14px;
@@ -121,7 +258,12 @@ BASE_STYLE = """
     color: white;
     font-size: 1rem;
   }
-  input:focus { outline: none; border-color: #22c55e; }
+
+  input:focus {
+    outline: none;
+    border-color: #22c55e;
+  }
+
   .btn {
     display: inline-block;
     padding: 10px 24px;
@@ -135,36 +277,320 @@ BASE_STYLE = """
     text-decoration: none;
     transition: 0.2s;
   }
+
   .btn:hover { background: #16a34a; }
+
   .btn-secondary {
     background: transparent;
     color: #86efac;
     border: 1px solid rgba(34,197,94,0.4);
   }
+
   .btn-secondary:hover { background: rgba(34,197,94,0.15); }
-  .error { color: #f87171; background: rgba(248,113,113,0.1); border: 1px solid rgba(248,113,113,0.3); border-radius: 8px; padding: 10px 14px; margin-bottom: 16px; font-size: 0.9rem; }
-  .success { color: #86efac; background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.3); border-radius: 8px; padding: 10px 14px; margin-bottom: 16px; font-size: 0.9rem; }
-  table { width: 100%; border-collapse: collapse; margin-top: 8px; }
-  th, td { padding: 12px 14px; text-align: left; }
-  th { background: rgba(34,197,94,0.2); color: #86efac; font-size: 0.9rem; }
+
+  .error {
+    color: #f87171;
+    background: rgba(248,113,113,0.1);
+    border: 1px solid rgba(248,113,113,0.3);
+    border-radius: 8px;
+    padding: 10px 14px;
+    margin-bottom: 16px;
+    font-size: 0.9rem;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 8px;
+  }
+
+  th, td {
+    padding: 12px 14px;
+    text-align: left;
+  }
+
+  th {
+    background: rgba(34,197,94,0.2);
+    color: #86efac;
+    font-size: 0.9rem;
+  }
+
   tr { background: rgba(255,255,255,0.04); }
   tr:nth-child(even) { background: rgba(255,255,255,0.07); }
   tr:hover { background: rgba(34,197,94,0.12); }
-  td { color: #e2e8f0; border-bottom: 1px solid rgba(255,255,255,0.06); }
+
+  td {
+    color: #e2e8f0;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+
   .medal { font-size: 1.1rem; }
   .empty { text-align: center; color: #94a3b8; padding: 20px; }
   .footer { text-align: center; color: #475569; font-size: 0.8rem; margin-top: 24px; }
   .form-card { max-width: 400px; margin: 0 auto; }
-  .form-footer { text-align: center; margin-top: 16px; color: #94a3b8; font-size: 0.9rem; }
+
+  .form-footer {
+    text-align: center;
+    margin-top: 16px;
+    color: #94a3b8;
+    font-size: 0.9rem;
+  }
+
   .form-footer a { color: #86efac; }
-  .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; }
-  .badge-you { background: rgba(34,197,94,0.2); color: #86efac; border: 1px solid rgba(34,197,94,0.4); }
-  .logged-in-info { text-align: center; color: #86efac; font-size: 0.85rem; margin-bottom: 16px; padding: 8px; background: rgba(34,197,94,0.08); border-radius: 8px; }
+
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: bold;
+  }
+
+  .badge-you {
+    background: rgba(34,197,94,0.2);
+    color: #86efac;
+    border: 1px solid rgba(34,197,94,0.4);
+  }
+
+  .logged-in-info {
+    text-align: center;
+    color: #86efac;
+    font-size: 0.85rem;
+    margin-bottom: 20px;
+    padding: 10px;
+    background: rgba(34,197,94,0.08);
+    border-radius: 8px;
+  }
+
+  .section {
+    margin-top: 24px;
+    padding: 20px;
+    background: rgba(255,255,255,0.045);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 16px;
+  }
+
+  .section h2 {
+    color: #86efac;
+    font-size: 1.2rem;
+    margin-bottom: 14px;
+  }
+
+  .section p {
+    color: #cbd5e1;
+    line-height: 1.6;
+  }
+
+  .leaderboard-title {
+    margin: 0 0 12px;
+    color: #86efac;
+    font-size: 1.15rem;
+  }
+
+  .controls-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 14px;
+  }
+
+  .control-card {
+    padding: 14px;
+    border-radius: 12px;
+    background: rgba(15,23,42,0.45);
+    border: 1px solid rgba(255,255,255,0.08);
+    color: #e2e8f0;
+    line-height: 1.5;
+  }
+
+  .control-key {
+    display: inline-block;
+    min-width: 42px;
+    text-align: center;
+    margin-right: 8px;
+    margin-bottom: 6px;
+    padding: 6px 10px;
+    border-radius: 8px;
+    background: rgba(34,197,94,0.18);
+    border: 1px solid rgba(34,197,94,0.35);
+    color: #bbf7d0;
+    font-weight: bold;
+  }
+
+  .flow-vertical {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    margin-top: 18px;
+  }
+
+  .flow-step {
+    width: 100%;
+    max-width: 520px;
+    padding: 16px 18px;
+    border-radius: 14px;
+    background: rgba(15,23,42,0.55);
+    border: 1px solid rgba(34,197,94,0.24);
+    text-align: center;
+    color: #e2e8f0;
+  }
+
+  .flow-step strong {
+    display: block;
+    color: #86efac;
+    margin-bottom: 8px;
+    font-size: 1.05rem;
+  }
+
+  .flow-branch {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    width: 100%;
+    max-width: 760px;
+  }
+
+  .flow-branch .flow-step {
+    max-width: none;
+    text-align: left;
+  }
+
+  .flow-arrow-down {
+    color: #22c55e;
+    font-size: 1.8rem;
+    line-height: 1;
+    font-weight: bold;
+  }
+
+  .flow-arrow-split {
+    width: 100%;
+    max-width: 760px;
+    text-align: center;
+    color: #22c55e;
+    font-size: 1.4rem;
+    letter-spacing: 10px;
+    line-height: 1;
+  }
+
+  .diagram-note {
+    margin-top: 14px;
+    color: #94a3b8;
+    font-size: 0.92rem;
+  }
+
+  .er-diagram {
+    margin-top: 18px;
+    display: grid;
+    grid-template-columns: 1fr 120px 1fr;
+    align-items: center;
+    gap: 18px;
+  }
+
+  .entity {
+    background: rgba(15,23,42,0.55);
+    border: 1px solid rgba(34,197,94,0.22);
+    border-radius: 14px;
+    overflow: hidden;
+  }
+
+  .entity-title {
+    background: rgba(34,197,94,0.16);
+    color: #bbf7d0;
+    font-weight: bold;
+    padding: 12px 14px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+  }
+
+  .entity-body {
+    padding: 12px 14px;
+  }
+
+  .entity-body div {
+    padding: 6px 0;
+    color: #dbeafe;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+
+  .entity-body div:last-child {
+    border-bottom: none;
+  }
+
+  .pk { color: #fbbf24; font-weight: bold; }
+  .fk { color: #93c5fd; font-weight: bold; }
+
+  .er-link {
+    position: relative;
+    height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #86efac;
+    font-weight: bold;
+    text-align: center;
+  }
+
+  .er-link::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 8px;
+    right: 8px;
+    height: 2px;
+    background: rgba(134,239,172,0.8);
+    transform: translateY(-50%);
+  }
+
+  .er-link span {
+    position: relative;
+    z-index: 1;
+    background: rgba(30,41,59,1);
+    padding: 6px 10px;
+    border-radius: 999px;
+    border: 1px solid rgba(134,239,172,0.25);
+    font-size: 0.95rem;
+  }
+
+  @media (max-width: 760px) {
+    .container {
+      padding: 20px;
+    }
+
+    .flow-branch {
+      grid-template-columns: 1fr;
+    }
+
+    .er-diagram {
+      grid-template-columns: 1fr;
+    }
+
+    .er-link {
+      height: auto;
+      padding: 8px 0;
+    }
+
+    .er-link::before {
+      display: none;
+    }
+  }
 </style>
 """
 
 
 def nav_html(current_user):
+    # --------------------------------------------------------
+    # Vygeneruje navigaci podle toho, jestli je uživatel
+    # přihlášený nebo ne.
+    #
+    # Přihlášený:
+    # - Žebříček
+    # - Moje skóre
+    # - Odhlásit
+    #
+    # Nepřihlášený:
+    # - Žebříček
+    # - Přihlásit se
+    # - Registrace
+    # --------------------------------------------------------
     if current_user:
         return f"""
         <nav>
@@ -182,6 +608,19 @@ def nav_html(current_user):
 
 
 def page(title, body, current_user=None):
+    # --------------------------------------------------------
+    # Obecná funkce pro vytvoření celé HTML stránky.
+    #
+    # Skládá:
+    # - head
+    # - title
+    # - CSS styl
+    # - hlavní kontejner
+    # - nadpis stránky
+    # - navigaci
+    # - obsah stránky
+    # - footer
+    # --------------------------------------------------------
     return f"""<!DOCTYPE html>
 <html lang="cs">
 <head>
@@ -193,6 +632,7 @@ def page(title, body, current_user=None):
 <body>
 <div class="container">
   <h1>🐍 Snake Leaderboard</h1>
+  <div class="subtitle">Žebříček hráčů, ovládání hry a databázová dokumentace</div>
   {nav_html(current_user)}
   {body}
   <div class="footer">Snake game databáze</div>
@@ -201,7 +641,165 @@ def page(title, body, current_user=None):
 </html>"""
 
 
+def controls_section():
+    # --------------------------------------------------------
+    # Vrací HTML sekci s ovládáním hry.
+    # Je to statický popis kláves a akcí.
+    # --------------------------------------------------------
+    return """
+    <div class="section">
+      <h2>🎮 Ovládání hry</h2>
+      <div class="controls-grid">
+        <div class="control-card"><span class="control-key">↑</span><span class="control-key">W</span> Pohyb hada nahoru</div>
+        <div class="control-card"><span class="control-key">↓</span><span class="control-key">S</span> Pohyb hada dolů</div>
+        <div class="control-card"><span class="control-key">←</span><span class="control-key">A</span> Pohyb hada doleva</div>
+        <div class="control-card"><span class="control-key">→</span><span class="control-key">D</span> Pohyb hada doprava</div>
+        <div class="control-card"><span class="control-key">P</span> Pozastavení a pokračování hry</div>
+        <div class="control-card"><span class="control-key">R</span> Restart aktuální hry</div>
+        <div class="control-card"><span class="control-key">1</span><span class="control-key">2</span><span class="control-key">3</span> Přepnutí skinu hry</div>
+        <div class="control-card"><span class="control-key">Klik</span> Zahájení hry tlačítkem START</div>
+      </div>
+    </div>
+    """
+
+
+def diagram_section():
+    # --------------------------------------------------------
+    # Vrací HTML sekci s vývojovým diagramem hry.
+    # Je to vysvětlení průběhu herní logiky.
+    # --------------------------------------------------------
+    return """
+    <div class="section">
+      <h2>📈 Vývojový diagram hry</h2>
+      <p>
+        Hra probíhá jako opakující se proces. Po spuštění se inicializuje herní stav,
+        následně se opakuje pohyb hada, kontrola jídla a kontrola kolizí.
+      </p>
+
+      <div class="flow-vertical">
+        <div class="flow-step">
+          <strong>1. Start programu</strong>
+          Načte se databáze, high score, herní okno, skin a zobrazí se hlavní menu.
+        </div>
+
+        <div class="flow-arrow-down">↓</div>
+
+        <div class="flow-step">
+          <strong>2. Spuštění nové hry</strong>
+          Po kliknutí na START se nastaví počáteční stav hry, vynuluje se skóre,
+          vytvoří se hlava hada a náhodně se umístí jídlo.
+        </div>
+
+        <div class="flow-arrow-down">↓</div>
+
+        <div class="flow-step">
+          <strong>3. Herní smyčka</strong>
+          Program opakovaně čte vstup hráče, posouvá hada a překresluje hrací plochu.
+        </div>
+
+        <div class="flow-arrow-down">↓</div>
+
+        <div class="flow-branch">
+          <div class="flow-step">
+            <strong>4A. Snědl had jídlo?</strong>
+            Pokud ano, zvýší se skóre, had se prodlouží, může se zvýšit rychlost
+            a vygeneruje se nové jídlo.
+          </div>
+
+          <div class="flow-step">
+            <strong>4B. Došlo ke kolizi?</strong>
+            Kontroluje se náraz do zdi nebo do vlastního těla.
+            Pokud kolize nastane, hra končí.
+          </div>
+        </div>
+
+        <div class="flow-arrow-split">↓   ↓</div>
+
+        <div class="flow-branch">
+          <div class="flow-step">
+            <strong>5A. Pokračování hry</strong>
+            Pokud nenastala kolize, herní smyčka běží dál a celý proces se opakuje.
+          </div>
+
+          <div class="flow-step">
+            <strong>5B. Konec hry</strong>
+            Skóre se uloží do databáze, zobrazí se stav Game Over a hráč se vrací do menu.
+          </div>
+        </div>
+      </div>
+
+      <div class="diagram-note">
+        Průběh hry lze shrnout jako:
+        <strong>start → nová hra → herní smyčka → kontrola jídla a kolizí → pokračování nebo konec hry</strong>.
+      </div>
+    </div>
+    """
+
+
+def er_section():
+    # --------------------------------------------------------
+    # Vrací HTML sekci s jednoduchým ER diagramem databáze.
+    #
+    # ER diagram ukazuje:
+    # - entity
+    # - atributy
+    # - vazby mezi tabulkami
+    # --------------------------------------------------------
+    return """
+    <div class="section">
+      <h2>🗂️ ER diagram databáze</h2>
+      <p>
+        Databáze obsahuje dvě hlavní entity: <strong>uzivatele</strong> a <strong>hry</strong>.
+        Jeden uživatel může mít více odehraných her, tedy vazba je typu <strong>1 : N</strong>.
+      </p>
+
+      <div class="er-diagram">
+        <div class="entity">
+          <div class="entity-title">UZIVATELE</div>
+          <div class="entity-body">
+            <div><span class="pk">PK</span> id</div>
+            <div>username</div>
+            <div>password_hash</div>
+            <div>datum_registrace</div>
+          </div>
+        </div>
+
+        <div class="er-link">
+          <span>1 : N</span>
+        </div>
+
+        <div class="entity">
+          <div class="entity-title">HRY</div>
+          <div class="entity-body">
+            <div><span class="pk">PK</span> id</div>
+            <div>skore</div>
+            <div>datum</div>
+            <div><span class="fk">vazba</span> username</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="diagram-note">
+        Tabulka <strong>hry</strong> ukládá jednotlivé výsledky. Sloupec
+        <strong>username</strong> propojuje záznam hry s konkrétním uživatelem.
+        Pokud hráč není přihlášen, může být tato hodnota prázdná.
+      </div>
+    </div>
+    """
+
+
 def page_leaderboard(current_user):
+    # --------------------------------------------------------
+    # Vygeneruje domovskou stránku se žebříčkem.
+    #
+    # Načte TOP 50 výsledků z tabulky hry podle skóre.
+    # Přidá:
+    # - info o přihlášení
+    # - tabulku výsledků
+    # - sekci ovládání
+    # - vývojový diagram
+    # - ER diagram
+    # --------------------------------------------------------
     conn = get_conn()
     rows = conn.execute(
         "SELECT skore, datum, username FROM hry ORDER BY skore DESC LIMIT 50"
@@ -216,12 +814,16 @@ def page_leaderboard(current_user):
         info = '<div class="logged-in-info" style="color:#94a3b8;">Nejsi přihlášen – skóre se ukládají anonymně</div>'
 
     if rows:
-        table = """<table>
+        table = """<div class="section">
+          <div class="leaderboard-title">🏆 Nejlepší výsledky</div>
+          <table>
           <tr><th>Pořadí</th><th>Hráč</th><th>Skóre</th><th>Datum</th></tr>"""
+
         for i, row in enumerate(rows, 1):
             medal = medals[i - 1] if i <= 3 else f"{i}."
             uname = row["username"] or "?"
             you = f' <span class="badge badge-you">ty</span>' if uname == current_user else ""
+
             table += f"""
           <tr>
             <td><span class="medal">{medal}</span></td>
@@ -229,14 +831,25 @@ def page_leaderboard(current_user):
             <td><strong>{row['skore']}</strong></td>
             <td style="color:#94a3b8;font-size:0.85rem">{row['datum']}</td>
           </tr>"""
-        table += "</table>"
-    else:
-        table = '<div class="empty">Zatím nejsou žádné výsledky.</div>'
 
-    return page("Žebříček", info + table, current_user)
+        table += "</table></div>"
+    else:
+        table = '<div class="section"><div class="empty">Zatím nejsou žádné výsledky.</div></div>'
+
+    body = info + table + controls_section() + diagram_section() + er_section()
+    return page("Žebříček", body, current_user)
 
 
 def page_my_scores(current_user):
+    # --------------------------------------------------------
+    # Stránka "Moje skóre".
+    #
+    # Pokud uživatel není přihlášen, vrací None.
+    # Jinak:
+    # - načte všechna jeho skóre
+    # - spočítá nejlepší skóre
+    # - vytvoří HTML tabulku
+    # --------------------------------------------------------
     if not current_user:
         return None
 
@@ -245,6 +858,7 @@ def page_my_scores(current_user):
         "SELECT skore, datum FROM hry WHERE username=? ORDER BY skore DESC",
         (current_user,)
     ).fetchall()
+
     best = conn.execute(
         "SELECT MAX(skore) as m FROM hry WHERE username=?", (current_user,)
     ).fetchone()
@@ -271,6 +885,10 @@ def page_my_scores(current_user):
 
 
 def page_login(error=None):
+    # --------------------------------------------------------
+    # Vytvoří HTML pro přihlašovací formulář.
+    # Když je chyba, zobrazí ji nad formulářem.
+    # --------------------------------------------------------
     err = f'<div class="error">{error}</div>' if error else ""
     body = f"""<div class="form-card">
       <div class="subtitle">Přihlásit se do Snake</div>
@@ -286,6 +904,10 @@ def page_login(error=None):
 
 
 def page_register(error=None):
+    # --------------------------------------------------------
+    # Vytvoří HTML pro registrační formulář.
+    # Když je chyba, zobrazí ji nad formulářem.
+    # --------------------------------------------------------
     err = f'<div class="error">{error}</div>' if error else ""
     body = f"""<div class="form-card">
       <div class="subtitle">Vytvořit nový účet</div>
@@ -301,34 +923,83 @@ def page_register(error=None):
     return page("Registrace", body)
 
 
+# ============================================================
+# ======================= HTTP HANDLER =======================
+# ============================================================
+# Třída Handler dědí z BaseHTTPRequestHandler.
+#
+# Zpracovává:
+# - GET požadavky
+# - POST požadavky
+#
+# To znamená, že řídí celý web:
+# - otevírání stránek
+# - login
+# - registraci
+# - logout
+# ============================================================
+
 class Handler(BaseHTTPRequestHandler):
 
     def send_html(self, html, status=200, extra_headers=None):
+        # ----------------------------------------------------
+        # Pošle HTML odpověď klientovi.
+        #
+        # status = HTTP status code
+        # extra_headers = volitelné další hlavičky
+        # ----------------------------------------------------
         encoded = html.encode("utf-8")
         self.send_response(status)
         self.send_header("Content-Type", "text/html; charset=utf-8")
+
         if extra_headers:
             for k, v in extra_headers.items():
                 self.send_header(k, v)
+
         self.end_headers()
         self.wfile.write(encoded)
 
     def redirect(self, location, extra_headers=None):
+        # ----------------------------------------------------
+        # Pošle HTTP redirect (302).
+        #
+        # Používá se např. po loginu nebo logoutu.
+        # ----------------------------------------------------
         self.send_response(302)
         self.send_header("Location", location)
+
         if extra_headers:
             for k, v in extra_headers.items():
                 self.send_header(k, v)
+
         self.end_headers()
 
     def read_body(self):
+        # ----------------------------------------------------
+        # Přečte tělo POST requestu.
+        #
+        # Content-Length říká, kolik bajtů se má přečíst.
+        # ----------------------------------------------------
         length = int(self.headers.get("Content-Length", 0))
         return self.rfile.read(length).decode("utf-8")
 
     def current_user(self):
+        # ----------------------------------------------------
+        # Vrátí aktuálně přihlášeného uživatele podle cookie.
+        # ----------------------------------------------------
         return get_session_user(self.headers.get("Cookie"))
 
     def do_GET(self):
+        # ----------------------------------------------------
+        # Zpracování GET požadavků.
+        #
+        # Typické GET:
+        # - /           -> homepage / žebříček
+        # - /login      -> přihlášení
+        # - /register   -> registrace
+        # - /moje       -> moje skóre
+        # - /logout     -> odhlášení
+        # ----------------------------------------------------
         path = urlparse(self.path).path
         user = self.current_user()
 
@@ -354,28 +1025,59 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_html(page_my_scores(user))
 
         elif path == "/logout":
+            # ------------------------------------------------
+            # logout:
+            # 1) najde session token v cookie
+            # 2) smaže ho ze sessions slovníku
+            # 3) smaže session.json
+            # 4) pošle cookie s Max-Age=0 => smazání cookie
+            # ------------------------------------------------
             cookie = self.headers.get("Cookie", "")
             for part in cookie.split(";"):
                 part = part.strip()
                 if part.startswith("session="):
                     token = part[8:]
                     sessions.pop(token, None)
+
             smaz_session()
             self.redirect("/", {"Set-Cookie": "session=; Max-Age=0; Path=/"})
 
         else:
+            # ------------------------------------------------
+            # neznámá stránka = 404
+            # ------------------------------------------------
             self.send_response(404)
             self.end_headers()
 
     def do_POST(self):
+        # ----------------------------------------------------
+        # Zpracování POST požadavků.
+        #
+        # Používá se hlavně pro formuláře:
+        # - /login
+        # - /register
+        # ----------------------------------------------------
         path = urlparse(self.path).path
         body = self.read_body()
         params = parse_qs(body)
 
         def p(name):
+            # ------------------------------------------------
+            # Pomocná funkce:
+            # vrátí hodnotu parametru z formuláře
+            # a odstraní mezery na začátku/konci
+            # ------------------------------------------------
             return params.get(name, [""])[0].strip()
 
         if path == "/login":
+            # ------------------------------------------------
+            # Přihlášení uživatele:
+            # 1) načte username a password
+            # 2) najde uživatele v DB
+            # 3) porovná hash hesla
+            # 4) při úspěchu vytvoří session token
+            # 5) uloží token do cookie a do session.json
+            # ------------------------------------------------
             username = p("username")
             password = p("password")
 
@@ -395,6 +1097,15 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_html(page_login("Špatné jméno nebo heslo."))
 
         elif path == "/register":
+            # ------------------------------------------------
+            # Registrace uživatele:
+            # 1) načte vstupy z formuláře
+            # 2) validuje délku jména
+            # 3) validuje délku hesla
+            # 4) kontroluje shodu hesel
+            # 5) uloží nového uživatele do DB
+            # 6) rovnou ho přihlásí
+            # ------------------------------------------------
             username = p("username")
             password = p("password")
             password2 = p("password2")
@@ -402,9 +1113,11 @@ class Handler(BaseHTTPRequestHandler):
             if len(username) < 3:
                 self.send_html(page_register("Jméno musí mít alespoň 3 znaky."))
                 return
+
             if len(password) < 4:
                 self.send_html(page_register("Heslo musí mít alespoň 4 znaky."))
                 return
+
             if password != password2:
                 self.send_html(page_register("Hesla se neshodují."))
                 return
@@ -418,21 +1131,45 @@ class Handler(BaseHTTPRequestHandler):
                 conn.commit()
                 conn.close()
 
+                # po registraci automatické přihlášení
                 token = secrets.token_hex(32)
                 sessions[token] = username
                 uloz_session(username, token)
                 self.redirect("/", {"Set-Cookie": f"session={token}; Path=/; HttpOnly"})
+
             except sqlite3.IntegrityError:
+                # ------------------------------------------------
+                # IntegrityError vznikne typicky když už username
+                # v DB existuje (username je UNIQUE).
+                # ------------------------------------------------
                 conn.close()
                 self.send_html(page_register("Toto jméno je již obsazené."))
 
         else:
+            # ------------------------------------------------
+            # neznámá POST cesta = 404
+            # ------------------------------------------------
             self.send_response(404)
             self.end_headers()
 
     def log_message(self, format, *args):
+        # ----------------------------------------------------
+        # Přepsání log_message vypne standardní logování serveru
+        # do konzole.
+        #
+        # Díky tomu server nevypisuje každý request.
+        # ----------------------------------------------------
         pass
 
+
+# ============================================================
+# ======================= START SERVERU ======================
+# ============================================================
+# Když se soubor spustí přímo:
+# 1) inicializuje databázi
+# 2) vypíše adresu serveru
+# 3) spustí HTTP server na localhost:8000
+# ============================================================
 
 if __name__ == "__main__":
     init_db()
