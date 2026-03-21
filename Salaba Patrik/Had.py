@@ -1,21 +1,37 @@
-import turtle
-import random
-import sqlite3
-import json
-import os
-from datetime import datetime
-from typing import Optional
+import turtle            # knihovna pro jednoduchou 2D grafiku
+import random            # náhodné pozice jídla
+import sqlite3           # práce s SQLite databází
+import json              # čtení session.json
+import os                # kontrola existence souboru
+from datetime import datetime   # aktuální datum a čas pro ukládání skóre
+from typing import Optional     # pro typ Optional[str]
 
-# =========================
-#  Databáze
-# =========================
+# ============================================================
+# ========================= DATABÁZE ==========================
+# ============================================================
+# Tahle část zajišťuje ukládání výsledků hry do SQLite databáze.
+# Databáze se jmenuje snake_game.db
+# Ukládá:
+# - skóre
+# - datum odehrání
+# - username hráče (pokud je přihlášený)
+# ============================================================
 
-DB_NAME = "snake_game.db"
+DB_NAME = "snake_game.db"   # název databázového souboru
 
 
 def vytvor_databazi():
+    # --------------------------------------------------------
+    # Funkce vytvoří databázi a tabulku "hry", pokud ještě neexistuje.
+    # Tabulka obsahuje:
+    # id       -> unikátní identifikátor
+    # skore    -> dosažené skóre
+    # datum    -> datum a čas odehrání
+    # username -> jméno hráče
+    # --------------------------------------------------------
     conn = sqlite3.connect(DB_NAME)
     c = conn.cursor()
+
     c.execute("""
         CREATE TABLE IF NOT EXISTS hry (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -24,16 +40,29 @@ def vytvor_databazi():
             username TEXT
         )
     """)
+
+    # --------------------------------------------------------
+    # Tento blok je tu kvůli kompatibilitě se starší verzí DB.
+    # Kdyby už existovala stará tabulka bez sloupce username,
+    # pokusí se ho přidat.
+    # Pokud už tam je, SQLite vyhodí OperationalError
+    # a ten jen ignorujeme.
+    # --------------------------------------------------------
     try:
         c.execute("ALTER TABLE hry ADD COLUMN username TEXT")
         conn.commit()
     except sqlite3.OperationalError:
         pass
+
     conn.commit()
     conn.close()
 
 
 def nacti_prihlaseneho_hrace() -> Optional[str]:
+    # --------------------------------------------------------
+    # Funkce se pokusí načíst uživatele ze souboru session.json
+    # Pokud soubor neexistuje nebo je rozbitý, vrací None.
+    # --------------------------------------------------------
     if os.path.exists("session.json"):
         try:
             with open("session.json", "r", encoding="utf-8") as f:
@@ -45,6 +74,10 @@ def nacti_prihlaseneho_hrace() -> Optional[str]:
 
 
 def uloz_skore(skore: int):
+    # --------------------------------------------------------
+    # Uloží skóre aktuální hry do databáze.
+    # Zároveň si načte přihlášeného uživatele.
+    # --------------------------------------------------------
     username = nacti_prihlaseneho_hrace()
 
     conn = sqlite3.connect(DB_NAME)
@@ -58,6 +91,10 @@ def uloz_skore(skore: int):
 
 
 def nacti_high_score() -> int:
+    # --------------------------------------------------------
+    # Načte nejvyšší dosažené skóre z databáze.
+    # Pokud databáze zatím nic neobsahuje, vrátí 0.
+    # --------------------------------------------------------
     conn = sqlite3.connect(DB_NAME)
     c = conn.cursor()
     c.execute("SELECT COALESCE(MAX(skore), 0) FROM hry")
@@ -66,30 +103,62 @@ def nacti_high_score() -> int:
     return int(vysledek)
 
 
+# vytvoření databáze při startu programu
 vytvor_databazi()
 
-# =========================
-#  Barvy / utility
-# =========================
+# ============================================================
+# ===================== BARVY / POMOCNÉ FUNKCE ===============
+# ============================================================
+# Tady jsou utility funkce:
+# - ztmavení barvy
+# - převod textového směru na číselný heading pro turtle
+# ============================================================
 
 def ztmav_barvu(hex_color: str, faktor: float) -> str:
+    # --------------------------------------------------------
+    # Vstup: hex barva, např. "#2aa36b"
+    # faktor < 1 -> barva bude tmavší
+    # Používá se pro postupné tmavnutí segmentů těla hada.
+    # --------------------------------------------------------
     hex_color = hex_color.lstrip("#")
     r = int(hex_color[0:2], 16)
     g = int(hex_color[2:4], 16)
     b = int(hex_color[4:6], 16)
+
     r = max(0, int(r * faktor))
     g = max(0, int(g * faktor))
     b = max(0, int(b * faktor))
+
     return f"#{r:02x}{g:02x}{b:02x}"
 
 
 def smer_na_heading(direction: str) -> int:
+    # --------------------------------------------------------
+    # Turtle používá heading:
+    # 0   = doprava
+    # 90  = nahoru
+    # 180 = doleva
+    # 270 = dolů
+    #
+    # Tohle převádí textový směr na číslo.
+    # --------------------------------------------------------
     return {"nahoru": 90, "dolu": 270, "doleva": 180, "doprava": 0}.get(direction, 0)
 
 
-# =========================
-#  Skins
-# =========================
+# ============================================================
+# ========================== SKINS ============================
+# ============================================================
+# Tady jsou definované vzhledy hry.
+# Každý skin obsahuje:
+# - barvu pozadí
+# - barvu mřížky
+# - barvu rámečku
+# - barvu hlavy hada
+# - barvu těla hada
+# - barvu jídla
+# - ikonu jídla
+# - barvu textu
+# ============================================================
 
 SKINS = {
     1: {
@@ -124,54 +193,96 @@ SKINS = {
     }
 }
 
+# výchozí skin
 skin_id = 1
 skin = SKINS[skin_id]
 
-# =========================
-#  Okno
-# =========================
+# ============================================================
+# ===================== OKNO / ROZMĚRY =======================
+# ============================================================
+# Zde je nastavení velikosti okna a herního prostoru.
+# Důležité:
+# - okno má vlastní rozměry
+# - herní plocha má vlastní hranice
+# - rámeček je jen vizuální ohraničení kolem hrací plochy
+# ============================================================
 
+SIRKA_OKNA = 600
+VYSKA_OKNA = 700
+VELIKOST_KROKU = 20          # had se pohybuje po 20 pixelech
+MAX_XY = 290
+POSUN_HRY_Y = -60            # posunutí hrací plochy níž kvůli hornímu HUDu
+
+# ------------------------------------------------------------
+# skutečná herní oblast
+# sem se může had pohybovat
+# sem se může spawnovat jídlo
+# ------------------------------------------------------------
+HRACI_MIN_X = -280
+HRACI_MAX_X = 280
+HRACI_MIN_Y = -280 + POSUN_HRY_Y
+HRACI_MAX_Y = 280 + POSUN_HRY_Y
+
+# ------------------------------------------------------------
+# vizuální rámeček kolem herní plochy
+# tohle je jen grafické ohraničení
+# ------------------------------------------------------------
+RAMECEK_PADDING = 10
+MIN_X = HRACI_MIN_X - RAMECEK_PADDING
+MAX_X = HRACI_MAX_X + RAMECEK_PADDING
+MIN_Y = HRACI_MIN_Y - RAMECEK_PADDING
+MAX_Y = HRACI_MAX_Y + RAMECEK_PADDING
+
+# ------------------------------------------------------------
+# validní grid pozice
+# jídlo se spawní jen sem, ale s rezervou jednoho políčka
+# od kraje, aby ikonka nepřetékala přes desku
+# ------------------------------------------------------------
+X_POZICE = list(range(HRACI_MIN_X + VELIKOST_KROKU, HRACI_MAX_X, VELIKOST_KROKU))
+Y_POZICE = list(range(HRACI_MIN_Y + VELIKOST_KROKU, HRACI_MAX_Y, VELIKOST_KROKU))
+
+# ------------------------------------------------------------
+# vytvoření okna
+# ------------------------------------------------------------
 okno = turtle.Screen()
 okno.title("Hadi hra")
 okno.bgcolor(skin["bg"])
-okno.setup(width=600, height=600)
-okno.tracer(0)
+okno.setup(width=SIRKA_OKNA, height=VYSKA_OKNA)
+okno.tracer(0)   # ruční update obrazovky pro plynulejší řízení
 
-# =========================
-#  Herní stav
-# =========================
+# ============================================================
+# ======================== HERNÍ STAV ========================
+# ============================================================
 
-VELIKOST_KROKU = 20
-MAX_XY = 290
 hra_bezi = False
 pauza = False
 skore = 0
 high_score = nacti_high_score()
-rychlost_ms = 90
+rychlost_ms = 90   # čím menší číslo, tím rychlejší hra
 
-# =========================
-#  UI text
-# =========================
+# ============================================================
+# =========================== UI TEXT ========================
+# ============================================================
 
 skore_text = turtle.Turtle()
 skore_text.speed(0)
 skore_text.color(skin["text"])
 skore_text.penup()
 skore_text.hideturtle()
-skore_text.goto(0, 260)
+skore_text.goto(0, 310)
 
 info_text = turtle.Turtle()
 info_text.speed(0)
 info_text.color(skin["text"])
 info_text.penup()
 info_text.hideturtle()
-info_text.goto(0, 230)
+info_text.goto(0, 280)
 
 hrac_text = turtle.Turtle()
 hrac_text.speed(0)
 hrac_text.penup()
 hrac_text.hideturtle()
-hrac_text.goto(0, -260)
+hrac_text.goto(0, -330)
 
 
 def update_skore():
@@ -193,6 +304,7 @@ def update_hrac_text():
     hrac_text.clear()
     username = nacti_prihlaseneho_hrace()
     hrac_text.color(skin["text"])
+
     if username:
         hrac_text.write(f"Hráč: {username}", align="center", font=("Arial", 11, "normal"))
     else:
@@ -203,6 +315,10 @@ def update_hrac_text():
             font=("Arial", 11, "normal")
         )
 
+
+# ============================================================
+# ====================== RÁMEČEK A MŘÍŽKA ====================
+# ============================================================
 
 ramecek = turtle.Turtle()
 ramecek.hideturtle()
@@ -219,43 +335,68 @@ mrizka.penup()
 
 def kresli_ramecek():
     ramecek.clear()
+
+    # vnější rámeček
     ramecek.color(skin["frame"])
-    ramecek.goto(-MAX_XY, -MAX_XY)
+    ramecek.pensize(4)
+    ramecek.goto(MIN_X, MIN_Y)
+    ramecek.setheading(0)
     ramecek.pendown()
-    for _ in range(4):
-        ramecek.forward(MAX_XY * 2)
+
+    for _ in range(2):
+        ramecek.forward(MAX_X - MIN_X)
         ramecek.left(90)
+        ramecek.forward(MAX_Y - MIN_Y)
+        ramecek.left(90)
+
+    ramecek.penup()
+
+    # vnitřní linka
+    vnitrni = 6
+    ramecek.pensize(2)
+    ramecek.goto(MIN_X + vnitrni, MIN_Y + vnitrni)
+    ramecek.setheading(0)
+    ramecek.pendown()
+
+    for _ in range(2):
+        ramecek.forward((MAX_X - MIN_X) - 2 * vnitrni)
+        ramecek.left(90)
+        ramecek.forward((MAX_Y - MIN_Y) - 2 * vnitrni)
+        ramecek.left(90)
+
     ramecek.penup()
 
 
 def kresli_mrizku(krok=40):
     mrizka.clear()
     mrizka.color(skin["grid"])
-    for x in range(-MAX_XY, MAX_XY + 1, krok):
-        mrizka.goto(x, -MAX_XY)
+
+    for x in range(HRACI_MIN_X, HRACI_MAX_X + 1, krok):
+        mrizka.goto(x, HRACI_MIN_Y)
         mrizka.pendown()
-        mrizka.goto(x, MAX_XY)
+        mrizka.goto(x, HRACI_MAX_Y)
         mrizka.penup()
-    for y in range(-MAX_XY, MAX_XY + 1, krok):
-        mrizka.goto(-MAX_XY, y)
+
+    for y in range(HRACI_MIN_Y, HRACI_MAX_Y + 1, krok):
+        mrizka.goto(HRACI_MIN_X, y)
         mrizka.pendown()
-        mrizka.goto(MAX_XY, y)
+        mrizka.goto(HRACI_MAX_X, y)
         mrizka.penup()
 
 
-# =========================
-#  Menu
-# =========================
+# ============================================================
+# ============================ MENU ==========================
+# ============================================================
 
 menu_napis = turtle.Turtle()
 menu_napis.hideturtle()
 menu_napis.penup()
-menu_napis.goto(0, 100)
+menu_napis.goto(0, 80)
 
 high_score_text = turtle.Turtle()
 high_score_text.hideturtle()
 high_score_text.penup()
-high_score_text.goto(0, 30)
+high_score_text.goto(0, 20)
 
 tlacitko = turtle.Turtle()
 tlacitko.hideturtle()
@@ -277,6 +418,7 @@ def vykresli_menu():
     tlacitko_text.clear()
     update_info("")
     skore_text.clear()
+
     kresli_mrizku()
     kresli_ramecek()
 
@@ -290,29 +432,31 @@ def vykresli_menu():
     menu_napis.write("Hadi Gameska!", align="center", font=("Arial", 28, "bold"))
     high_score_text.write(f"High Score: {high_score}", align="center", font=("Arial", 18, "normal"))
 
-    tlacitko.goto(-70, -70)
+    tlacitko.goto(-70, -90)
     tlacitko.setheading(0)
     tlacitko.pendown()
     tlacitko.begin_fill()
     tlacitko.fillcolor("#b6f2c3" if skin_id == 1 else "#2a2a3a" if skin_id == 2 else "#1d2a22")
+
     for _ in range(2):
         tlacitko.forward(140)
         tlacitko.left(90)
         tlacitko.forward(55)
         tlacitko.left(90)
+
     tlacitko.end_fill()
     tlacitko.penup()
 
-    tlacitko_text.goto(0, -55)
+    tlacitko_text.goto(0, -75)
     tlacitko_text.write("START", align="center", font=("Arial", 18, "bold"))
 
-    update_info("Skins: 1 / 2 / 3   |   Pauza (P)  Restart (R)")
+    update_info("Skins: 1 / 2 / 3   |   Pauza (P)   Restart (R)")
     update_hrac_text()
 
 
-# =========================
-#  Herní objekty
-# =========================
+# ============================================================
+# ======================== HERNÍ OBJEKTY =====================
+# ============================================================
 
 hlava = turtle.Turtle()
 hlava.speed(0)
@@ -320,7 +464,7 @@ hlava.shape("square")
 hlava.shapesize(1.10, 1.10)
 hlava.color(skin["head"])
 hlava.penup()
-hlava.goto(0, 0)
+hlava.goto(0, POSUN_HRY_Y)
 hlava.direction = "stop"
 hlava.hideturtle()
 
@@ -330,7 +474,7 @@ jidlo.shape("circle")
 jidlo.shapesize(0.8, 0.8)
 jidlo.color(skin["food"])
 jidlo.penup()
-jidlo.goto(0, 100)
+jidlo.goto(0, 100 + POSUN_HRY_Y)
 jidlo.hideturtle()
 
 jidlo_ikona = turtle.Turtle()
@@ -339,10 +483,11 @@ jidlo_ikona.penup()
 
 
 def nastav_jidlo_ikonu():
+    # menší ikonka, aby nepřetékala přes okraj
     jidlo_ikona.clear()
     jidlo_ikona.color(skin["food"])
-    jidlo_ikona.goto(jidlo.xcor(), jidlo.ycor() - 10)
-    jidlo_ikona.write(skin["food_icon"], align="center", font=("Arial", 18, "bold"))
+    jidlo_ikona.goto(jidlo.xcor(), jidlo.ycor() - 8)
+    jidlo_ikona.write(skin["food_icon"], align="center", font=("Arial", 14, "bold"))
 
 
 oko_L = turtle.Turtle()
@@ -386,10 +531,12 @@ def aktualizuj_oblicej_hada():
         oko_L.goto(x - 6, y + 6)
         oko_P.goto(x + 6, y + 6)
         jazyk.hideturtle()
+
     elif hlava.direction == "dolu":
         oko_L.goto(x - 6, y - 6)
         oko_P.goto(x + 6, y - 6)
         jazyk.hideturtle()
+
     elif hlava.direction == "doleva":
         oko_L.goto(x - 6, y + 6)
         oko_P.goto(x - 6, y - 6)
@@ -399,6 +546,7 @@ def aktualizuj_oblicej_hada():
             jazyk.goto(x - 14, y)
         else:
             jazyk.hideturtle()
+
     elif hlava.direction == "doprava":
         oko_L.goto(x + 6, y + 6)
         oko_P.goto(x + 6, y - 6)
@@ -408,6 +556,7 @@ def aktualizuj_oblicej_hada():
             jazyk.goto(x + 14, y)
         else:
             jazyk.hideturtle()
+
     else:
         oko_L.goto(x - 6, y + 6)
         oko_P.goto(x + 6, y + 6)
@@ -428,21 +577,24 @@ def vycisti_telo():
 
 
 def nahodna_pozice_na_mrizce():
-    x = random.randrange(-280, 281, VELIKOST_KROKU)
-    y = random.randrange(-280, 281, VELIKOST_KROKU)
+    x = random.choice(X_POZICE)
+    y = random.choice(Y_POZICE)
     return x, y
 
 
 def spawn_jidlo():
     while True:
         x, y = nahodna_pozice_na_mrizce()
+
         if abs(hlava.xcor() - x) < 1 and abs(hlava.ycor() - y) < 1:
             continue
+
         ok = True
         for seg in telo:
             if abs(seg.xcor() - x) < 1 and abs(seg.ycor() - y) < 1:
                 ok = False
                 break
+
         if ok:
             jidlo.goto(x, y)
             nastav_jidlo_ikonu()
@@ -459,11 +611,14 @@ def aplikuj_skin_na_objekty():
     hlava.color(skin["head"])
     jidlo.color(skin["food"])
     jazyk.color(skin["food"])
+
     kresli_mrizku()
     kresli_ramecek()
+
     for i, seg in enumerate(telo):
         f = max(0.55, 1.0 - (i * 0.03))
         seg.color(ztmav_barvu(skin["body"], f))
+
     if hra_bezi:
         nastav_jidlo_ikonu()
         aktualizuj_oblicej_hada()
@@ -477,6 +632,7 @@ def nastav_skin(nove_id: int):
     skin_id = nove_id
     skin = SKINS[skin_id]
     aplikuj_skin_na_objekty()
+
     if not hra_bezi:
         vykresli_menu()
 
@@ -493,9 +649,9 @@ def skin_3():
     nastav_skin(3)
 
 
-# =========================
-#  Ovládání
-# =========================
+# ============================================================
+# ========================== OVLÁDÁNÍ ========================
+# ============================================================
 
 def jdi_nahoru():
     if hlava.direction != "dolu":
@@ -546,12 +702,12 @@ okno.onkeypress(skin_1, "1")
 okno.onkeypress(skin_2, "2")
 okno.onkeypress(skin_3, "3")
 
-# =========================
-#  Game flow
-# =========================
+# ============================================================
+# ========================= GAME FLOW ========================
+# ============================================================
 
 def klik_na_tlacitko(x, y):
-    if not hra_bezi and (-70 <= x <= 70 and -70 <= y <= -15):
+    if not hra_bezi and (-70 <= x <= 70 and -90 <= y <= -35):
         spustit_hru()
 
 
@@ -578,7 +734,7 @@ def spustit_hru():
     hlava.showturtle()
     jidlo.showturtle()
 
-    hlava.goto(0, 0)
+    hlava.goto(0, POSUN_HRY_Y)
     hlava.direction = "stop"
 
     vycisti_telo()
@@ -599,7 +755,7 @@ def game_over(do_menu=True):
     high_score = nacti_high_score()
     hra_bezi = False
     hlava.direction = "stop"
-    hlava.goto(0, 0)
+    hlava.goto(0, POSUN_HRY_Y)
     hlava.hideturtle()
     jidlo.hideturtle()
     jidlo_ikona.clear()
@@ -656,7 +812,10 @@ def tick():
     pohyb_hlavy()
     aktualizuj_oblicej_hada()
 
-    if abs(hlava.xcor()) > MAX_XY or abs(hlava.ycor()) > MAX_XY:
+    if (
+        hlava.xcor() < HRACI_MIN_X or hlava.xcor() > HRACI_MAX_X or
+        hlava.ycor() < HRACI_MIN_Y or hlava.ycor() > HRACI_MAX_Y
+    ):
         game_over(do_menu=True)
         okno.update()
         return
@@ -695,12 +854,11 @@ def tick():
     okno.ontimer(tick, rychlost_ms)
 
 
-# =========================
-#  Start programu
-# =========================
+# ============================================================
+# ======================= START PROGRAMU =====================
+# ============================================================
 
 vykresli_menu()
 okno.mainloop()
-
 # nekonečná smyčka okna - bez toho by se program hned ukončil
 okno.mainloop()
