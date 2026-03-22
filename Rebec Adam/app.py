@@ -49,9 +49,16 @@ def load_user(user_id):
 @app.route("/")
 @login_required
 def home():
-    # Načteme všechna skóre přihlášeného uživatele
+    # všechna skóre přihlášeného uživatele
     user_scores = Score.query.filter_by(user_id=current_user.id).all()
-    return render_template("Webovka.html", email=current_user.email, scores=user_scores)
+    # 5 nejnovějších her všech hráčů
+    recent_scores = Score.query.order_by(Score.id.desc()).limit(5).all()
+    return render_template(
+        "Webovka.html",
+        email=current_user.email,
+        scores=user_scores,
+        recent_scores=recent_scores,
+    )
 
 
 @app.route("/register", methods=["GET", "POST"])
@@ -88,8 +95,10 @@ def login():
             return redirect(url_for("home"))
         else:
             flash("Špatný email nebo heslo.")
+    recent_scores = Score.query.order_by(Score.id.desc()).limit(5).all()
 
-    return render_template("login.html")
+    # Předáme recent_scores do šablony
+    return render_template("login.html", recent_scores=recent_scores)
 
 
 @app.route("/logout")
