@@ -83,6 +83,29 @@
         Zatím jsi neodehrál žádnou hru.
       </p>
       {% endif %}
+      <hr style="margin: 40px 0; border: 1px solid #333" />
+      <h2>Posledních 5 odehraných her (Globálně)</h2>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Hráč</th>
+            <th>Obtížnost</th>
+            <th>Skóre hráče</th>
+            <th>Skóre bota</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for rs in recent_scores %}
+          <tr>
+            <td>{{ rs.player.email }}</td>
+            <td>{{ rs.difficulty.capitalize() }}</td>
+            <td>{{ rs.goals_left }}</td>
+            <td>{{ rs.goals_right }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
     </div>
   </body>
 </html>
