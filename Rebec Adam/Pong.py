@@ -8,7 +8,7 @@ pygame.init()
 # Nastavení okna
 WIDTH, HEIGHT = 800, 600
 win = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("Pong – Myš vs Bot (Propojeno s Flaskem)")
+pygame.display.set_caption("Pong")
 clock = pygame.time.Clock()
 
 # Barvy
@@ -104,7 +104,8 @@ while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
-
+  git config --global user.email "rebecadam2006@gmail.com"
+  git config --global user.name "Adareb"
         # OVLÁDÁNÍ LOGINU
         if game_state == "login":
             if event.type == pygame.KEYDOWN:
