@@ -9,28 +9,11 @@ import os                                                   # práce se soubory
 # ============================================================
 # ===================== ZÁKLADNÍ NASTAVENÍ ===================
 # ============================================================
-# Tohle je název databázového souboru.
-# Používá se stejná databáze jako ve hře.
-# ============================================================
 
 DB_NAME = "snake_game.db"
 
 # ============================================================
 # ======================= SESSION PAMĚŤ ======================
-# ============================================================
-# Aktivní sessions jsou uložené v paměti serveru.
-# Formát:
-# { token: username }
-#
-# Například:
-# {
-#   "a3f8c1...": "salaba"
-# }
-#
-# Když se uživatel přihlásí, dostane token.
-# Ten token se uloží:
-# - do cookie v prohlížeči
-# - do tohoto slovníku v paměti serveru
 # ============================================================
 
 sessions = {}
@@ -39,11 +22,6 @@ sessions = {}
 def get_conn():
     # --------------------------------------------------------
     # Vytvoří připojení k SQLite databázi.
-    #
-    # row_factory = sqlite3.Row znamená, že můžeme číst
-    # výsledky i podle názvů sloupců:
-    # row["username"], row["skore"], ...
-    # místo jen row[0], row[1], ...
     # --------------------------------------------------------
     conn = sqlite3.connect(DB_NAME)
     conn.row_factory = sqlite3.Row
@@ -57,25 +35,10 @@ def init_db():
     # Vytvoří dvě tabulky:
     # 1) uzivatele
     # 2) hry
-    #
-    # uzivatele:
-    # - id
-    # - username
-    # - password_hash
-    # - datum_registrace
-    #
-    # hry:
-    # - id
-    # - skore
-    # - datum
-    # - username
-    #
-    # username v tabulce hry slouží jako vazba na uživatele.
     # --------------------------------------------------------
     conn = get_conn()
     c = conn.cursor()
 
-    # tabulka uživatelů
     c.execute("""
         CREATE TABLE IF NOT EXISTS uzivatele (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -85,7 +48,6 @@ def init_db():
         )
     """)
 
-    # tabulka her
     c.execute("""
         CREATE TABLE IF NOT EXISTS hry (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -95,13 +57,6 @@ def init_db():
         )
     """)
 
-    # --------------------------------------------------------
-    # Tento blok řeší případ, kdy existuje starší verze tabulky
-    # hry bez sloupce username.
-    #
-    # Pokud tam username není, pokusí se ho přidat.
-    # Pokud už existuje, chyba se ignoruje.
-    # --------------------------------------------------------
     try:
         c.execute("ALTER TABLE hry ADD COLUMN username TEXT")
         conn.commit()
@@ -115,12 +70,6 @@ def init_db():
 def hash_password(password):
     # --------------------------------------------------------
     # Heslo se neukládá přímo, ale jako hash.
-    #
-    # Hash = jednosměrný otisk hesla.
-    # Používá se SHA-256.
-    #
-    # Výhoda:
-    # kdyby někdo získal databázi, nevidí přímo hesla.
     # --------------------------------------------------------
     return hashlib.sha256(password.encode()).hexdigest()
 
@@ -128,14 +77,6 @@ def hash_password(password):
 def get_session_user(cookie_header):
     # --------------------------------------------------------
     # Z cookie hlavičky zjistí přihlášeného uživatele.
-    #
-    # Cookie může vypadat třeba takto:
-    # "session=abc123xyz; theme=dark"
-    #
-    # Funkce:
-    # 1) najde session token
-    # 2) podívá se do sessions slovníku
-    # 3) vrátí username nebo None
     # --------------------------------------------------------
     if not cookie_header:
         return None
@@ -152,9 +93,6 @@ def get_session_user(cookie_header):
 def uloz_session(username, token):
     # --------------------------------------------------------
     # Uloží session i do souboru session.json
-    #
-    # Díky tomu si může desktop hra načíst uživatele
-    # a ukládat skóre pod jeho jménem.
     # --------------------------------------------------------
     with open("session.json", "w", encoding="utf-8") as f:
         json.dump({"username": username, "token": token}, f)
@@ -170,15 +108,6 @@ def smaz_session():
 
 # ============================================================
 # =========================== CSS ============================
-# ============================================================
-# BASE_STYLE obsahuje kompletní CSS stylování webu.
-#
-# Je to HTML <style> blok uložený jako víceřádkový string.
-# Ten se pak vkládá do každé stránky.
-#
-# Díky tomu:
-# - nemusíš mít externí CSS soubor
-# - všechno je v jednom Python souboru
 # ============================================================
 
 BASE_STYLE = """
@@ -416,66 +345,25 @@ BASE_STYLE = """
     font-weight: bold;
   }
 
-  .flow-vertical {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 10px;
-    margin-top: 18px;
-  }
-
-  .flow-step {
-    width: 100%;
-    max-width: 520px;
-    padding: 16px 18px;
-    border-radius: 14px;
-    background: rgba(15,23,42,0.55);
-    border: 1px solid rgba(34,197,94,0.24);
+  .diagram-image {
+    margin-top: 16px;
     text-align: center;
-    color: #e2e8f0;
   }
 
-  .flow-step strong {
-    display: block;
-    color: #86efac;
-    margin-bottom: 8px;
-    font-size: 1.05rem;
-  }
-
-  .flow-branch {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 14px;
-    width: 100%;
-    max-width: 760px;
-  }
-
-  .flow-branch .flow-step {
-    max-width: none;
-    text-align: left;
-  }
-
-  .flow-arrow-down {
-    color: #22c55e;
-    font-size: 1.8rem;
-    line-height: 1;
-    font-weight: bold;
-  }
-
-  .flow-arrow-split {
-    width: 100%;
-    max-width: 760px;
-    text-align: center;
-    color: #22c55e;
-    font-size: 1.4rem;
-    letter-spacing: 10px;
-    line-height: 1;
+  .diagram-image img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,0.1);
+    background: white;
+    padding: 8px;
   }
 
   .diagram-note {
     margin-top: 14px;
     color: #94a3b8;
     font-size: 0.92rem;
+    text-align: center;
   }
 
   .er-diagram {
@@ -555,10 +443,6 @@ BASE_STYLE = """
       padding: 20px;
     }
 
-    .flow-branch {
-      grid-template-columns: 1fr;
-    }
-
     .er-diagram {
       grid-template-columns: 1fr;
     }
@@ -580,16 +464,6 @@ def nav_html(current_user):
     # --------------------------------------------------------
     # Vygeneruje navigaci podle toho, jestli je uživatel
     # přihlášený nebo ne.
-    #
-    # Přihlášený:
-    # - Žebříček
-    # - Moje skóre
-    # - Odhlásit
-    #
-    # Nepřihlášený:
-    # - Žebříček
-    # - Přihlásit se
-    # - Registrace
     # --------------------------------------------------------
     if current_user:
         return f"""
@@ -610,16 +484,6 @@ def nav_html(current_user):
 def page(title, body, current_user=None):
     # --------------------------------------------------------
     # Obecná funkce pro vytvoření celé HTML stránky.
-    #
-    # Skládá:
-    # - head
-    # - title
-    # - CSS styl
-    # - hlavní kontejner
-    # - nadpis stránky
-    # - navigaci
-    # - obsah stránky
-    # - footer
     # --------------------------------------------------------
     return f"""<!DOCTYPE html>
 <html lang="cs">
@@ -632,7 +496,7 @@ def page(title, body, current_user=None):
 <body>
 <div class="container">
   <h1>🐍 Snake Leaderboard</h1>
-  <div class="subtitle">Žebříček hráčů, ovládání hry a databázová dokumentace</div>
+  <div class="subtitle">Žebříček hráčů, ovládání hry a vývojové diagramy</div>
   {nav_html(current_user)}
   {body}
   <div class="footer">Snake game databáze</div>
@@ -644,7 +508,6 @@ def page(title, body, current_user=None):
 def controls_section():
     # --------------------------------------------------------
     # Vrací HTML sekci s ovládáním hry.
-    # Je to statický popis kláves a akcí.
     # --------------------------------------------------------
     return """
     <div class="section">
@@ -663,74 +526,69 @@ def controls_section():
     """
 
 
-def diagram_section():
+def diagram_zmena_pohybu_section():
     # --------------------------------------------------------
-    # Vrací HTML sekci s vývojovým diagramem hry.
-    # Je to vysvětlení průběhu herní logiky.
+    # Obrázek diagramu - změna pohybu
+    # Soubor ulož jako: diagram_zmena_pohybu.png
     # --------------------------------------------------------
     return """
     <div class="section">
-      <h2>📈 Vývojový diagram hry</h2>
+      <h2>Vývojový diagram – Změna pohybu</h2>
       <p>
-        Hra probíhá jako opakující se proces. Po spuštění se inicializuje herní stav,
-        následně se opakuje pohyb hada, kontrola jídla a kontrola kolizí.
+        Diagram ukazuje logiku změny směru hada po stisku klávesy.
       </p>
-
-      <div class="flow-vertical">
-        <div class="flow-step">
-          <strong>1. Start programu</strong>
-          Načte se databáze, high score, herní okno, skin a zobrazí se hlavní menu.
-        </div>
-
-        <div class="flow-arrow-down">↓</div>
-
-        <div class="flow-step">
-          <strong>2. Spuštění nové hry</strong>
-          Po kliknutí na START se nastaví počáteční stav hry, vynuluje se skóre,
-          vytvoří se hlava hada a náhodně se umístí jídlo.
-        </div>
-
-        <div class="flow-arrow-down">↓</div>
-
-        <div class="flow-step">
-          <strong>3. Herní smyčka</strong>
-          Program opakovaně čte vstup hráče, posouvá hada a překresluje hrací plochu.
-        </div>
-
-        <div class="flow-arrow-down">↓</div>
-
-        <div class="flow-branch">
-          <div class="flow-step">
-            <strong>4A. Snědl had jídlo?</strong>
-            Pokud ano, zvýší se skóre, had se prodlouží, může se zvýšit rychlost
-            a vygeneruje se nové jídlo.
-          </div>
-
-          <div class="flow-step">
-            <strong>4B. Došlo ke kolizi?</strong>
-            Kontroluje se náraz do zdi nebo do vlastního těla.
-            Pokud kolize nastane, hra končí.
-          </div>
-        </div>
-
-        <div class="flow-arrow-split">↓   ↓</div>
-
-        <div class="flow-branch">
-          <div class="flow-step">
-            <strong>5A. Pokračování hry</strong>
-            Pokud nenastala kolize, herní smyčka běží dál a celý proces se opakuje.
-          </div>
-
-          <div class="flow-step">
-            <strong>5B. Konec hry</strong>
-            Skóre se uloží do databáze, zobrazí se stav Game Over a hráč se vrací do menu.
-          </div>
-        </div>
+      <div class="diagram-image">
+        <img src="diagram_zmena_pohybu.png" alt="Vývojový diagram změna pohybu">
       </div>
-
       <div class="diagram-note">
-        Průběh hry lze shrnout jako:
-        <strong>start → nová hra → herní smyčka → kontrola jídla a kolizí → pokračování nebo konec hry</strong>.
+        Ulož screenshot diagramu do stejné složky jako tento Python soubor pod názvem
+        <strong>diagram_zmena_pohybu.png</strong>.
+      </div>
+    </div>
+    """
+
+
+def diagram_kolize_jablko_section():
+    # --------------------------------------------------------
+    # Obrázek diagramu - kolize s jablkem
+    # Soubor ulož jako: diagram_kolize_jablko.png
+    # --------------------------------------------------------
+    return """
+    <div class="section">
+      <h2>Vývojový diagram – Kolize s jablkem</h2>
+      <p>
+        Diagram ukazuje, co se stane, když had sní jablko:
+        zvýšení skóre, přidání článku těla a vytvoření nové pozice jablka.
+      </p>
+      <div class="diagram-image">
+        <img src="diagram_kolize_jablko.png" alt="Vývojový diagram kolize s jablkem">
+      </div>
+      <div class="diagram-note">
+        Ulož screenshot diagramu do stejné složky jako tento Python soubor pod názvem
+        <strong>diagram_kolize_jablko.png</strong>.
+      </div>
+    </div>
+    """
+
+
+def diagram_kolize_stena_section():
+    # --------------------------------------------------------
+    # Obrázek diagramu - kolize se stěnou
+    # Soubor ulož jako: diagram_kolize_stena.png
+    # --------------------------------------------------------
+    return """
+    <div class="section">
+      <h2>Vývojový diagram – Kolize se stěnou</h2>
+      <p>
+        Diagram ukazuje, že po pohybu hada se kontroluje náraz do stěny.
+        Pokud ke kolizi dojde, hra končí.
+      </p>
+      <div class="diagram-image">
+        <img src="diagram_kolize_stena.png" alt="Vývojový diagram kolize se stěnou">
+      </div>
+      <div class="diagram-note">
+        Ulož screenshot diagramu do stejné složky jako tento Python soubor pod názvem
+        <strong>diagram_kolize_stena.png</strong>.
       </div>
     </div>
     """
@@ -739,15 +597,10 @@ def diagram_section():
 def er_section():
     # --------------------------------------------------------
     # Vrací HTML sekci s jednoduchým ER diagramem databáze.
-    #
-    # ER diagram ukazuje:
-    # - entity
-    # - atributy
-    # - vazby mezi tabulkami
     # --------------------------------------------------------
     return """
     <div class="section">
-      <h2>🗂️ ER diagram databáze</h2>
+      <h2>ER diagram databáze</h2>
       <p>
         Databáze obsahuje dvě hlavní entity: <strong>uzivatele</strong> a <strong>hry</strong>.
         Jeden uživatel může mít více odehraných her, tedy vazba je typu <strong>1 : N</strong>.
@@ -791,14 +644,6 @@ def er_section():
 def page_leaderboard(current_user):
     # --------------------------------------------------------
     # Vygeneruje domovskou stránku se žebříčkem.
-    #
-    # Načte TOP 50 výsledků z tabulky hry podle skóre.
-    # Přidá:
-    # - info o přihlášení
-    # - tabulku výsledků
-    # - sekci ovládání
-    # - vývojový diagram
-    # - ER diagram
     # --------------------------------------------------------
     conn = get_conn()
     rows = conn.execute(
@@ -836,19 +681,21 @@ def page_leaderboard(current_user):
     else:
         table = '<div class="section"><div class="empty">Zatím nejsou žádné výsledky.</div></div>'
 
-    body = info + table + controls_section() + diagram_section() + er_section()
+    body = (
+        info
+        + table
+        + controls_section()
+        + diagram_zmena_pohybu_section()
+        + diagram_kolize_jablko_section()
+        + diagram_kolize_stena_section()
+        + er_section()
+    )
     return page("Žebříček", body, current_user)
 
 
 def page_my_scores(current_user):
     # --------------------------------------------------------
     # Stránka "Moje skóre".
-    #
-    # Pokud uživatel není přihlášen, vrací None.
-    # Jinak:
-    # - načte všechna jeho skóre
-    # - spočítá nejlepší skóre
-    # - vytvoří HTML tabulku
     # --------------------------------------------------------
     if not current_user:
         return None
@@ -887,7 +734,6 @@ def page_my_scores(current_user):
 def page_login(error=None):
     # --------------------------------------------------------
     # Vytvoří HTML pro přihlašovací formulář.
-    # Když je chyba, zobrazí ji nad formulářem.
     # --------------------------------------------------------
     err = f'<div class="error">{error}</div>' if error else ""
     body = f"""<div class="form-card">
@@ -906,7 +752,6 @@ def page_login(error=None):
 def page_register(error=None):
     # --------------------------------------------------------
     # Vytvoří HTML pro registrační formulář.
-    # Když je chyba, zobrazí ji nad formulářem.
     # --------------------------------------------------------
     err = f'<div class="error">{error}</div>' if error else ""
     body = f"""<div class="form-card">
@@ -926,28 +771,10 @@ def page_register(error=None):
 # ============================================================
 # ======================= HTTP HANDLER =======================
 # ============================================================
-# Třída Handler dědí z BaseHTTPRequestHandler.
-#
-# Zpracovává:
-# - GET požadavky
-# - POST požadavky
-#
-# To znamená, že řídí celý web:
-# - otevírání stránek
-# - login
-# - registraci
-# - logout
-# ============================================================
 
 class Handler(BaseHTTPRequestHandler):
 
     def send_html(self, html, status=200, extra_headers=None):
-        # ----------------------------------------------------
-        # Pošle HTML odpověď klientovi.
-        #
-        # status = HTTP status code
-        # extra_headers = volitelné další hlavičky
-        # ----------------------------------------------------
         encoded = html.encode("utf-8")
         self.send_response(status)
         self.send_header("Content-Type", "text/html; charset=utf-8")
@@ -960,11 +787,6 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(encoded)
 
     def redirect(self, location, extra_headers=None):
-        # ----------------------------------------------------
-        # Pošle HTTP redirect (302).
-        #
-        # Používá se např. po loginu nebo logoutu.
-        # ----------------------------------------------------
         self.send_response(302)
         self.send_header("Location", location)
 
@@ -975,31 +797,13 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
 
     def read_body(self):
-        # ----------------------------------------------------
-        # Přečte tělo POST requestu.
-        #
-        # Content-Length říká, kolik bajtů se má přečíst.
-        # ----------------------------------------------------
         length = int(self.headers.get("Content-Length", 0))
         return self.rfile.read(length).decode("utf-8")
 
     def current_user(self):
-        # ----------------------------------------------------
-        # Vrátí aktuálně přihlášeného uživatele podle cookie.
-        # ----------------------------------------------------
         return get_session_user(self.headers.get("Cookie"))
 
     def do_GET(self):
-        # ----------------------------------------------------
-        # Zpracování GET požadavků.
-        #
-        # Typické GET:
-        # - /           -> homepage / žebříček
-        # - /login      -> přihlášení
-        # - /register   -> registrace
-        # - /moje       -> moje skóre
-        # - /logout     -> odhlášení
-        # ----------------------------------------------------
         path = urlparse(self.path).path
         user = self.current_user()
 
@@ -1025,13 +829,6 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_html(page_my_scores(user))
 
         elif path == "/logout":
-            # ------------------------------------------------
-            # logout:
-            # 1) najde session token v cookie
-            # 2) smaže ho ze sessions slovníku
-            # 3) smaže session.json
-            # 4) pošle cookie s Max-Age=0 => smazání cookie
-            # ------------------------------------------------
             cookie = self.headers.get("Cookie", "")
             for part in cookie.split(";"):
                 part = part.strip()
@@ -1043,41 +840,18 @@ class Handler(BaseHTTPRequestHandler):
             self.redirect("/", {"Set-Cookie": "session=; Max-Age=0; Path=/"})
 
         else:
-            # ------------------------------------------------
-            # neznámá stránka = 404
-            # ------------------------------------------------
             self.send_response(404)
             self.end_headers()
 
     def do_POST(self):
-        # ----------------------------------------------------
-        # Zpracování POST požadavků.
-        #
-        # Používá se hlavně pro formuláře:
-        # - /login
-        # - /register
-        # ----------------------------------------------------
         path = urlparse(self.path).path
         body = self.read_body()
         params = parse_qs(body)
 
         def p(name):
-            # ------------------------------------------------
-            # Pomocná funkce:
-            # vrátí hodnotu parametru z formuláře
-            # a odstraní mezery na začátku/konci
-            # ------------------------------------------------
             return params.get(name, [""])[0].strip()
 
         if path == "/login":
-            # ------------------------------------------------
-            # Přihlášení uživatele:
-            # 1) načte username a password
-            # 2) najde uživatele v DB
-            # 3) porovná hash hesla
-            # 4) při úspěchu vytvoří session token
-            # 5) uloží token do cookie a do session.json
-            # ------------------------------------------------
             username = p("username")
             password = p("password")
 
@@ -1097,15 +871,6 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_html(page_login("Špatné jméno nebo heslo."))
 
         elif path == "/register":
-            # ------------------------------------------------
-            # Registrace uživatele:
-            # 1) načte vstupy z formuláře
-            # 2) validuje délku jména
-            # 3) validuje délku hesla
-            # 4) kontroluje shodu hesel
-            # 5) uloží nového uživatele do DB
-            # 6) rovnou ho přihlásí
-            # ------------------------------------------------
             username = p("username")
             password = p("password")
             password2 = p("password2")
@@ -1131,44 +896,25 @@ class Handler(BaseHTTPRequestHandler):
                 conn.commit()
                 conn.close()
 
-                # po registraci automatické přihlášení
                 token = secrets.token_hex(32)
                 sessions[token] = username
                 uloz_session(username, token)
                 self.redirect("/", {"Set-Cookie": f"session={token}; Path=/; HttpOnly"})
 
             except sqlite3.IntegrityError:
-                # ------------------------------------------------
-                # IntegrityError vznikne typicky když už username
-                # v DB existuje (username je UNIQUE).
-                # ------------------------------------------------
                 conn.close()
                 self.send_html(page_register("Toto jméno je již obsazené."))
 
         else:
-            # ------------------------------------------------
-            # neznámá POST cesta = 404
-            # ------------------------------------------------
             self.send_response(404)
             self.end_headers()
 
     def log_message(self, format, *args):
-        # ----------------------------------------------------
-        # Přepsání log_message vypne standardní logování serveru
-        # do konzole.
-        #
-        # Díky tomu server nevypisuje každý request.
-        # ----------------------------------------------------
         pass
 
 
 # ============================================================
 # ======================= START SERVERU ======================
-# ============================================================
-# Když se soubor spustí přímo:
-# 1) inicializuje databázi
-# 2) vypíše adresu serveru
-# 3) spustí HTTP server na localhost:8000
 # ============================================================
 
 if __name__ == "__main__":
