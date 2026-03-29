@@ -51,13 +51,18 @@ def load_user(user_id):
 def home():
     # všechna skóre přihlášeného uživatele
     user_scores = Score.query.filter_by(user_id=current_user.id).all()
-    # 5 nejnovějších her všech hráčů
-    recent_scores = Score.query.order_by(Score.id.desc()).limit(5).all()
-    return render_template(
+    # 10 nejlepších her globálně podle rozdílu skóre (hráč - bot)
+    best_scores = (
+        Score.query.filter(Score.goals_left > Score.goals_right)
+        .order_by((Score.goals_left - Score.goals_right).desc())
+        .limit(10)
+        .all()
+    )
+    return render_template,
         "Webovka.html",
         email=current_user.email,
         scores=user_scores,
-        recent_scores=recent_scores,
+        best_scores=best_scores,
     )
 
 
@@ -95,10 +100,16 @@ def login():
             return redirect(url_for("home"))
         else:
             flash("Špatný email nebo heslo.")
-    recent_scores = Score.query.order_by(Score.id.desc()).limit(5).all()
 
-    # Předáme recent_scores do šablony
-    return render_template("login.html", recent_scores=recent_scores)
+    best_scores = (
+        Score.query.filter(Score.goals_left > Score.goals_right)
+        .order_by((Score.goals_left - Score.goals_right).desc())
+        .limit(10)
+        .all()
+    )
+
+    # Předáme best_scores do šablony
+    return render_template("login.html", best_scores=best_scores)
 
 
 @app.route("/logout")
@@ -109,6 +120,16 @@ def logout():
 
 
 # ===== API PRO TVOJÍ HRU =====
+
+
+@app.route("/api/check_user", methods=["POST"])
+def check_user():
+    data = request.get_json()
+    if not data or "email" not in data:
+        return jsonify({"exists": False, "error": "Chybí email"}), 400
+
+    user = User.query.filter_by(email=data["email"]).first()
+    return jsonify({"exists": bool(user)}), 200
 
 
 @app.route("/api/save_score", methods=["POST"])
