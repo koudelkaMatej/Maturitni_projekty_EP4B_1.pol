@@ -55,7 +55,7 @@
     <p><a href="{{ url_for('register') }}">Nemáš účet? Zaregistruj se.</a></p>
     <div class="container">
       <hr style="margin: 40px 0; border: 1px solid #333" />
-      <h2>Posledních 5 odehraných her (Globálně)</h2>
+      <h2>Top 5 nejlepších her (Globálně)</h2>
 
       <table>
         <thead>
@@ -64,15 +64,17 @@
             <th>Obtížnost&nbsp;</th>
             <th>Skóre hráče&nbsp;</th>
             <th>Skóre bota&nbsp;</th>
+            <th>Rozdíl&nbsp;</th>
           </tr>
         </thead>
         <tbody>
-          {% for rs in recent_scores %}
+          {% for rs in best_scores %}
           <tr>
             <td>{{ rs.player.email }}</td>
             <td>{{ rs.difficulty.capitalize() }}</td>
             <td>{{ rs.goals_left }}</td>
             <td>{{ rs.goals_right }}</td>
+            <td>{{ rs.goals_left - rs.goals_right }}</td>
           </tr>
           {% endfor %}
         </tbody>
