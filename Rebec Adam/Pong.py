@@ -1,6 +1,7 @@
 import pygame
 import random
 import requests
+import math
 
 # Inicializace
 pygame.init()
@@ -23,7 +24,7 @@ menu_font = pygame.font.SysFont("consolas", 60)
 # Herní konstanty
 PADDLE_WIDTH, PADDLE_HEIGHT = 10, 100
 BALL_SIZE = 15
-BALL_ACCELERATION = 1.08  # Zrychlení o 8 % při každém odrazu
+BALL_ACCELERATION = random.uniform(1.08, 1.12)  # Zrychlení o 8-12 % při každém odrazu
 MAX_BALL_SPEED = 15
 SCORE_LIMIT = 10
 
@@ -39,7 +40,7 @@ show_difficulty = False
 waiting_for_click = False
 
 # Obtížnost bota
-BOT_SPEEDS = {"easy": 3, "medium": 5, "hard": 8}
+BOT_SPEEDS = {"easy": 3, "medium": 8, "hard": 12}
 
 
 def reset_game():
@@ -197,18 +198,54 @@ while running:
 
         # Odrazy od pálek + ZRYCHLENÍ
         if ball.colliderect(left_paddle) and ball_speed_x < 0:
+            # Vypočítat relativní pozici zásahu na pálce (0-1)
+            relative_y = (ball.centery - left_paddle.top) / left_paddle.height
+
+            # Nastavit nový úhel podle třetin
+            if relative_y < 1 / 3:
+                # Horní třetina: náhodný úhel 35-55° nahoru
+                angle = random.uniform(35, 55)
+                ball_speed_y = -abs(ball_speed_x) * math.tan(math.radians(angle))
+            elif relative_y < 2 / 3:
+                # Prostřední třetina: kolmo (vodorovně)
+                ball_speed_y = 0
+            else:
+                # Dolní třetina: náhodný úhel 35-55° dolů
+                angle = random.uniform(35, 55)
+                ball_speed_y = abs(ball_speed_x) * math.tan(math.radians(angle))
+
+            # Zrychlit x-rychlost
             ball_speed_x = abs(ball_speed_x) * BALL_ACCELERATION
-            ball_speed_y *= BALL_ACCELERATION
-            ball_pos_x = float(left_paddle.right)
             if abs(ball_speed_x) > MAX_BALL_SPEED:
                 ball_speed_x = MAX_BALL_SPEED
 
+            # Nastavit pozici míčku
+            ball_pos_x = float(left_paddle.right)
+
         if ball.colliderect(right_paddle) and ball_speed_x > 0:
+            # Vypočítat relativní pozici zásahu na pálce (0-1)
+            relative_y = (ball.centery - right_paddle.top) / right_paddle.height
+
+            # Nastavit nový úhel podle třetin
+            if relative_y < 1 / 3:
+                # Horní třetina: náhodný úhel 35-55° nahoru
+                angle = random.uniform(35, 55)
+                ball_speed_y = -abs(ball_speed_x) * math.tan(math.radians(angle))
+            elif relative_y < 2 / 3:
+                # Prostřední třetina: kolmo (vodorovně)
+                ball_speed_y = 0
+            else:
+                # Dolní třetina: náhodný úhel 35-55° dolů
+                angle = random.uniform(35, 55)
+                ball_speed_y = abs(ball_speed_x) * math.tan(math.radians(angle))
+
+            # Zrychlit x-rychlost (doleva)
             ball_speed_x = -abs(ball_speed_x) * BALL_ACCELERATION
-            ball_speed_y *= BALL_ACCELERATION
-            ball_pos_x = float(right_paddle.left - BALL_SIZE)
             if abs(ball_speed_x) > MAX_BALL_SPEED:
                 ball_speed_x = -MAX_BALL_SPEED
+
+            # Nastavit pozici míčku
+            ball_pos_x = float(right_paddle.left - BALL_SIZE)
 
         # Skórování
         if ball.left <= 0:

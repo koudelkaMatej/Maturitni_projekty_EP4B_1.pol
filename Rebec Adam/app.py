@@ -58,8 +58,8 @@ def home():
         .limit(10)
         .all()
     )
-    return render_template,
-        "Webovka.html",
+    return render_template(
+        "webovka.html",
         email=current_user.email,
         scores=user_scores,
         best_scores=best_scores,
@@ -117,6 +117,11 @@ def login():
 def logout():
     logout_user()
     return redirect(url_for("login"))
+
+
+@app.route("/about")
+def about():
+    return render_template("about.html")
 
 
 # ===== API PRO TVOJÍ HRU =====

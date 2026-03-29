@@ -11,6 +11,21 @@
         text-align: center;
         padding-top: 50px;
       }
+      .about-link {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        color: #aaa;
+        text-decoration: none;
+        font-size: 0.85em;
+        border: 1px solid #555;
+        padding: 8px 12px;
+        border-radius: 5px;
+      }
+      .about-link:hover {
+        background: #555;
+        color: #fff;
+      }
       form {
         display: inline-block;
         border: 2px solid #fff;
@@ -42,6 +57,7 @@
     </style>
   </head>
   <body>
+    <a href="{{ url_for('about') }}" class="about-link">O hře</a>
     <h1>PŘIHLÁŠENÍ DO HRY</h1>
     {% with messages = get_flashed_messages() %} {% if messages %} {% for
     message in messages %}
