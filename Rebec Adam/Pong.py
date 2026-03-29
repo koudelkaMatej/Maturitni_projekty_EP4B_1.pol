@@ -8,7 +8,7 @@ pygame.init()
 # Nastavení okna
 WIDTH, HEIGHT = 800, 600
 win = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("Pong")
+pygame.display.set_caption("Pong – Myš vs Bot (Propojeno s Flaskem)")
 clock = pygame.time.Clock()
 
 # Barvy
@@ -33,6 +33,7 @@ API_URL = "http://127.0.0.1:5000/api/save_score"
 # Proměnné stavu
 game_state = "login"  # login -> menu -> game
 user_email = ""
+login_message = ""
 difficulty = "medium"
 show_difficulty = False
 waiting_for_click = False
@@ -104,13 +105,24 @@ while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
-  git config --global user.email "rebecadam2006@gmail.com"
-  git config --global user.name "Adareb"
+
         # OVLÁDÁNÍ LOGINU
         if game_state == "login":
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_RETURN and "@" in user_email:
-                    game_state = "menu"
+                    try:
+                        r = requests.post(
+                            "http://127.0.0.1:5000/api/check_user",
+                            json={"email": user_email},
+                            timeout=3,
+                        )
+                        if r.status_code == 200 and r.json().get("exists"):
+                            login_message = ""
+                            game_state = "menu"
+                        else:
+                            login_message = "Email neexistuje. Zaregistruj se na webu."
+                    except requests.RequestException:
+                        login_message = "Nelze ověřit server. Ověř, že Flask běží."
                 elif event.key == pygame.K_BACKSPACE:
                     user_email = user_email[:-1]
                 else:
@@ -146,6 +158,9 @@ while running:
         win.blit(em, (WIDTH // 2 - em.get_width() // 2, 280))
         hint = font.render("Stiskni ENTER pro vstup", True, GRAY)
         win.blit(hint, (WIDTH // 2 - hint.get_width() // 2, 400))
+        if login_message:
+            msg = font.render(login_message, True, (255, 100, 100))
+            win.blit(msg, (WIDTH // 2 - msg.get_width() // 2, 460))
 
     elif game_state == "menu":
         title = menu_font.render("PONG ONLINE", True, WHITE)
