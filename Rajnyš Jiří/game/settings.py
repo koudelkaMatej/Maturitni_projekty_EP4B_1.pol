@@ -1,0 +1,54 @@
+# game settings
+FPS = 60
+PIXELS_PER_METER = 10  # 1 m = 10 px
+SCREEN_W = 2000  # even wider map
+SCREEN_H = 600
+
+# spawn 120 m nad hladinou
+START_SPAWN_M = -120
+START_SPAWN_Y = START_SPAWN_M * PIXELS_PER_METER
+SEA_LEVEL_Y = 0
+
+# player
+PLAYER_SIZE = (24, 24)  # smaller character
+MAX_CHARGE = 15.0
+CHARGE_RATE = 1.4
+
+# kyslik
+OXYGEN_MAX = 100.0
+OXYGEN_DEPLETION_PER_S = 2.0
+OXYGEN_RECOVER_PER_S = 7.0
+OXYGEN_DEPLETION_PER_FRAME = OXYGEN_DEPLETION_PER_S / FPS
+OXYGEN_RECOVER_PER_FRAME = OXYGEN_RECOVER_PER_S / FPS
+
+# fyzika 
+GRAVITY_ABOVE_M_S = 4.0   # m/s pad na vodou
+PASSIVE_DESCENT_M_S = 0.3 # m/s pasivni klesani pod vodou
+FAST_DESCENT_M_S = 0.7    # m/s rychle klesani pod vodou
+SWIM_UP_M_S = 0.7         # m/s plavani nahoru pod vodou
+
+# pixely na snimky
+GRAVITY_PX_PER_FRAME = (GRAVITY_ABOVE_M_S * PIXELS_PER_METER) / FPS
+PASSIVE_DESCENT_PX_PER_FRAME = (PASSIVE_DESCENT_M_S * PIXELS_PER_METER) / FPS
+FAST_DESCENT_PX_PER_FRAME = (FAST_DESCENT_M_S * PIXELS_PER_METER) / FPS
+SWIM_UP_PX_PER_FRAME = (SWIM_UP_M_S * PIXELS_PER_METER) / FPS
+
+QTE_LENGTH = 4
+QTE_TIME_PER_KEY_MS = 1200
+
+# monster debuffy
+OCTOPUS_O2_PENALTY = 25
+SHARK_O2_PENALTY = 15
+JELLY_STUN_MIN = 3.0
+JELLY_STUN_MAX = 5.0
+
+DB_FILE = "potapec_scores.db"
+
+MAP_DEPTH_METERS = 10000
+
+import os
+
+WEB_HOST = '127.0.0.1'
+WEB_PORT = int(os.environ.get('POTAPEC_WEB_PORT', 5000))
+WEB_URL = f'http://{WEB_HOST}:{WEB_PORT}'
+WEB_API_TOKEN = os.environ.get('POTAPEC_WEB_TOKEN', '')

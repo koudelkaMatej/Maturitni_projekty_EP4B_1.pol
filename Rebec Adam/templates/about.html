@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="cs">
+  <head>
+    <meta charset="UTF-8" />
+    <title>O hře</title>
+    <style>
+      body {
+        background: #000;
+        color: #fff;
+        font-family: "Consolas", monospace;
+        padding: 20px;
+      }
+      .container {
+        max-width: 900px;
+        margin: 0 auto;
+        border: 1px solid #fff;
+        padding: 30px;
+      }
+      h1,
+      h2 {
+        color: #aaa;
+        border-bottom: 1px solid #333;
+        padding-bottom: 10px;
+      }
+      p {
+        line-height: 1.8;
+        margin: 15px 0;
+      }
+      .features {
+        background: #111;
+        border-left: 3px solid #555;
+        padding: 15px;
+        margin: 20px 0;
+      }
+      .features li {
+        margin: 8px 0;
+      }
+      .back-link {
+        color: #aaa;
+        text-decoration: none;
+        font-size: 0.9em;
+        margin-bottom: 20px;
+        display: inline-block;
+        border: 1px solid #555;
+        padding: 8px 12px;
+        border-radius: 5px;
+      }
+      .back-link:hover {
+        background: #555;
+        color: #fff;
+      }
+      .info-box {
+        background: #1a1a1a;
+        border: 1px solid #333;
+        padding: 15px;
+        margin: 15px 0;
+        border-radius: 5px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <a href="javascript:history.back()" class="back-link">&lt; Zpět</a>
+
+      <h1 style="text-align: center">O hře Pong Online</h1>
+      <p>
+        <strong>Pong Online</strong> je moderní webová verze klasické hry Pong,
+        která vám umožňuje hrát proti inteligentnímu umělému inteligentnímu
+        soupeři (botovi). Hra kombinuje retro vzhled s moderní technologií a
+        online funkcionalitou.
+      </p>
+      <h2>Hlavní funkce</h2>
+      <div class="features">
+        <ul>
+          <li>
+            <strong>Tři úrovně obtížnosti:</strong> Snadná, střední a těžká
+          </li>
+          <li>
+            <strong>Inteligentní bot:</strong> Dynamicky se přizpůsobuje vaší
+            hře
+          </li>
+          <li>
+            <strong>Zrychlení míčku:</strong> Hra se postupně zrychluje s každým
+            odrazem
+          </li>
+          <li>
+            <strong>Herní limit:</strong> Hra končí, když někdo dosáhne 10 bodů
+          </li>
+          <li>
+            <strong>Uživatelské účty:</strong> Zapamatujeme si vaše skóre a
+            historii her
+          </li>
+          <li>
+            <strong>Globální leaderboard:</strong> Soutěžte s ostatními hráči
+          </li>
+        </ul>
+      </div>
+
+      <h2>Jak hrát</h2>
+      <div class="info-box">
+        <p>
+          <strong>Ovládání:</strong> Pohybujte myší nahoru a dolů, abyste
+          ovládali levou pálu. Cílem je odrazit míček a dosáhnout 10 bodů. Bot
+          ovládá pravou pálu a snaží se porazit vás!
+        </p>
+        <p>
+          <strong>Obtížnost:</strong> Vyberte si požadovanou obtížnost před
+          spuštěním hry z hlavního menu.
+        </p>
+      </div>
+
+      <h2>Technické detaily</h2>
+      <div class="info-box">
+        <img
+          src="{{ url_for('static', filename='Pong_diagram.png') }}"
+          alt="Pong diagram"
+          style="display: block; margin: 0 auto; max-width: 100%"
+        />
+        <p>
+          <strong>Vývoj hry:</strong> Hra je vyvinuta v Pythonu s knihovnou
+          Pygame pro herní logiku.
+        </p>
+        <p>
+          <strong>Backend:</strong> Flask webový framework s SQLite databází pro
+          ukládání skóre.
+        </p>
+        <p>
+          <strong>Fyzika:</strong> Hra používá přesné desetinné výpočty pro
+          plynulý pohyb míčku a realistické fyzické chování.
+        </p>
+        <p>
+          <strong>AI bot:</strong> Bot se přizpůsobuje na základě vybrané
+          obtížnosti a sleduje pozici míčku v reálném čase.
+        </p>
+      </div>
+
+      <h2>Autor</h2>
+      <p>
+        Hra byla vytvořena jako maturitní projekt. Kombinuje principy herního
+        vývoje, webových technologií a datových bází do jednoduché, ale zábavné
+        hry.
+      </p>
+
+      <div class="info-box">
+        <p
+          style="
+            text-align: center;
+            color: #888;
+            font-size: 2em;
+            margin-top: 30px;
+          "
+        >
+          Z myšlenky
+        </p>
+        <img
+          src="{{ url_for('static', filename='pong1.png') }}"
+          alt="Pong idea"
+          style="display: block; margin: 0 auto; max-width: 100%"
+        />
+        <p
+          style="
+            text-align: center;
+            color: #888;
+            font-size: 2em;
+            margin-top: 10px;
+          "
+        >
+          K realizaci
+        </p>
+        <img
+          src="{{ url_for('static', filename='pong2.png') }}"
+          alt="Pong Gameplay"
+          style="display: block; margin: 0 auto; max-width: 100%"
+        />
+      </div>
+    </div>
+  </body>
+</html>

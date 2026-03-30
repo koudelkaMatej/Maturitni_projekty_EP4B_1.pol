@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <title>Dinnobird 🦖</title>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='Trex.png') }}">
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<h1>🦖 DINNOBIRD  LEADERBOARD</h1>
+
+<table>
+    <tr>
+        <th>#</th>
+        <th>Hráč</th>
+        <th>Skóre</th>
+    </tr>
+
+    {% for player, score in scores %}
+    <tr>
+        <td>{{ loop.index }}</td>
+        <td>{{ player }}</td>
+        <td>{{ score }}</td>
+    </tr>
+    {% endfor %}
+</table>
+
+<p class="footer">Offline web localhost</p>
+
+</body>
+</html>
