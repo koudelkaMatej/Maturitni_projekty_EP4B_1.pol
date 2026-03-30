@@ -92,11 +92,15 @@
                 <td class="v">{{ stats.max_score_spin }}</td>
               </tr>
               <tr>
-                <td class="k">Nejnižší skóre</td>
+                <td class="k">Nejnižší osobní skóre</td>
                 <td class="v">
                   {{ stats.lowest_score if stats.lowest_score is not none else
-                  "N/A" }}
+                  "Žádné" }}
                 </td>
+              </tr>
+              <tr>
+                <td class="k">Nejvyšší osobní skóre </td>
+                <td class="v">{{ highscore if highscore is not none else "Žádné" }}</td>
               </tr>
             </table>
 
