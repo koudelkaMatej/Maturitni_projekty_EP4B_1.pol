@@ -2,7 +2,11 @@ import tkinter as tk
 import random
 import time
 import sqlite3
+import os
 from tkinter import messagebox, simpledialog
+
+# Cesta k databázi ve složce skriptu
+DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "score.db")
 
 class Minesweeper:
     def __init__(self, root):
@@ -12,9 +16,16 @@ class Minesweeper:
         # Escape ukonci hru
         self.root.bind('<Escape>', lambda e: self.ukonci_aplikaci())
 
+        # Scoreboard frame
+        self.scoreboard_frame = tk.Frame(self.root, bg="lightgray")
+        self.scoreboard_frame.place(relx=0.01, rely=0.05, relwidth=0.22, relheight=0.9)
+        self.scoreboard_label = tk.Label(self.scoreboard_frame, text="Scoreboard", font=("Arial", 30, "bold"), bg="lightgray")
+        self.scoreboard_label.pack(pady=10)
+        self.scoreboard_list = tk.Listbox(self.scoreboard_frame, font=("Arial", 15), width=25)
+        self.scoreboard_list.pack(padx=10, pady=10, fill="both", expand=True)
 
         # SQLite: ulozeni vysledku
-        self.conn = sqlite3.connect("score.db")
+        self.conn = sqlite3.connect(DB_PATH)
         self.cursor = self.conn.cursor()
         self.cursor.execute(
             """
@@ -28,31 +39,50 @@ class Minesweeper:
             )
             """
         )
+        # Tabulka hracu s unikatnim jmenem
+        self.cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS hraci (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                jmeno TEXT UNIQUE NOT NULL
+            )
+            """
+        )
+        # Pridani sloupce hrac_id do vysledky (pokud jeste neexistuje)
+        try:
+            self.cursor.execute("ALTER TABLE vysledky ADD COLUMN hrac_id INTEGER")
+        except sqlite3.OperationalError:
+            pass  # Sloupec jiz existuje
+        # Migrace: presunout existujici jmena do tabulky hraci
+        self.cursor.execute("INSERT OR IGNORE INTO hraci (jmeno) SELECT DISTINCT jmeno FROM vysledky WHERE jmeno IS NOT NULL")
+        self.cursor.execute("UPDATE vysledky SET hrac_id = (SELECT id FROM hraci WHERE hraci.jmeno = vysledky.jmeno) WHERE hrac_id IS NULL")
         self.conn.commit()
 
         # Hlavni menu
         self.menu_frame = tk.Frame(self.root)
         self.menu_frame.pack(expand=True)
 
-        tk.Label(self.menu_frame, text="Vyber obtiznost:", font=("Arial", 20)).pack(pady=20)
+        tk.Label(self.menu_frame, text="Vyber obtížnost:", font=("Arial", 20)).pack(pady=20)
         tk.Button(
             self.menu_frame,
-            text="Zacatecnik (8x8, 10 miny)",
+            text="Začátečník (8x8, 10 min)",
             font=("Arial", 16),
             command=lambda: self.spust_hru(8, 10),
         ).pack(pady=10)
         tk.Button(
             self.menu_frame,
-            text="Stredni (12x12, 20 miny)",
+            text="Střední (12x12, 20 min)",
             font=("Arial", 16),
             command=lambda: self.spust_hru(12, 20),
         ).pack(pady=10)
         tk.Button(
             self.menu_frame,
-            text="Expert (16x16, 40 miny)",
+            text="Expert (16x16, 40 min)",
             font=("Arial", 16),
             command=lambda: self.spust_hru(16, 40),
         ).pack(pady=10)
+
+        self.aktualizuj_scoreboard()
 
     def spust_hru(self, velikost, pocet_min):
         self.menu_frame.pack_forget()
@@ -103,11 +133,22 @@ class Minesweeper:
         # Herni plocha
         self.frame = tk.Frame(self.root)
         self.frame.place(relx=0.5, rely=0.5, anchor="center")
+
+        # Dynamické určení velikosti tlačítek podle velikosti okna a pole
+        screen_width = self.root.winfo_screenwidth()
+        screen_height = self.root.winfo_screenheight()
+        # Rezerva pro horní info panel a okraje
+        usable_height = int(screen_height * 0.7)
+        usable_width = int(screen_width * 0.7)
+        btn_size = min(usable_width // velikost, usable_height // velikost)
+        btn_size = max(20, btn_size)  # minimální velikost tlačítka
+
         for i in range(velikost):
-            self.frame.grid_rowconfigure(i, weight=1, minsize=40)
+            self.frame.grid_rowconfigure(i, weight=1, minsize=btn_size)
             for j in range(velikost):
-                self.frame.grid_columnconfigure(j, weight=1, minsize=40)
-                b = tk.Button(self.frame, width=2, height=1, command=lambda x=i, y=j: self.odkryj(x, y))
+                self.frame.grid_columnconfigure(j, weight=1, minsize=btn_size)
+                font_size = max(10, btn_size // 3)
+                b = tk.Button(self.frame, font=("Arial", font_size, "bold"), command=lambda x=i, y=j: self.odkryj(x, y))
                 b.grid(row=i, column=j, sticky="nsew", padx=1, pady=1)
                 b.bind("<Button-3>", lambda _, x=i, y=j: self.prepni_vlajku(x, y))
                 self.tlacitka[(i, j)] = b
@@ -153,7 +194,9 @@ class Minesweeper:
             self.konec_hry(vyhra=False)
         else:
             cislo = self.minova_pole[x][y]
-            b.config(text=str(cislo) if cislo > 0 else "", state="disabled", relief=tk.SUNKEN)
+            barvy = {1: "blue", 2: "green", 3: "red", 4: "purple", 5: "maroon", 6: "turquoise", 7: "black", 8: "gray"}
+            barva = barvy.get(cislo, "black")
+            b.config(text=str(cislo) if cislo > 0 else "", state="disabled", relief=tk.SUNKEN, disabledforeground=barva, fg=barva)
             self.odkryta += 1
             if cislo == 0:
                 for dx in [-1, 0, 1]:
@@ -168,12 +211,12 @@ class Minesweeper:
         if b["state"] == "disabled":
             return
         if not self.vlajky[x][y]:
-            b.config(text="F")
+            b.config(text="F", fg="red")
             self.vlajky[x][y] = True
             if self.minova_pole[x][y] != -1:
                 self.spatne_vlajky += 1
         else:
-            b.config(text="")
+            b.config(text="", fg="black")
             if self.vlajky[x][y] and self.minova_pole[x][y] != -1:
                 self.spatne_vlajky -= 1
             self.vlajky[x][y] = False
@@ -188,11 +231,16 @@ class Minesweeper:
         jmeno = simpledialog.askstring("Jmeno", "Zadej své jmeno:")
         if not jmeno:
             jmeno = "Neznamy"
+        # Registrace hrace (pokud jeste neexistuje)
+        self.cursor.execute("INSERT OR IGNORE INTO hraci (jmeno) VALUES (?)", (jmeno,))
+        self.cursor.execute("SELECT id FROM hraci WHERE jmeno = ?", (jmeno,))
+        hrac_id = self.cursor.fetchone()[0]
         self.cursor.execute(
-            "INSERT INTO vysledky (jmeno, skore, cas, obtiznost, vysledek) VALUES (?, ?, ?, ?, ?)",
-            (jmeno, skore, cas, f"{self.velikost}x{self.velikost}", vysledek),
+            "INSERT INTO vysledky (jmeno, skore, cas, obtiznost, vysledek, hrac_id) VALUES (?, ?, ?, ?, ?, ?)",
+            (jmeno, skore, cas, f"{self.velikost}x{self.velikost}", vysledek, hrac_id),
         )
         self.conn.commit()
+        self.aktualizuj_scoreboard()
         # Nabidni novou hru
         chce_znovu = messagebox.askyesno("Hra ukončena", "Zkusit znovu?")
         if chce_znovu:
@@ -236,6 +284,12 @@ class Minesweeper:
         if hasattr(self, "frame") and self.frame.winfo_exists():
             self.root.after(500, self.aktualizuj_info)
 
+    def aktualizuj_scoreboard(self):
+        self.scoreboard_list.delete(0, tk.END)
+        self.cursor.execute("SELECT jmeno, skore, cas, obtiznost, vysledek FROM vysledky ORDER BY skore DESC, cas ASC LIMIT 10")
+        vysledky = self.cursor.fetchall()
+        for idx, (jmeno, skore, cas, obtiznost, vysledek) in enumerate(vysledky, 1):
+            self.scoreboard_list.insert(tk.END, f"{idx}. {jmeno} | {skore}b | {cas}s | {obtiznost} | {vysledek}")
 
 if __name__ == "__main__":
     root = tk.Tk()
