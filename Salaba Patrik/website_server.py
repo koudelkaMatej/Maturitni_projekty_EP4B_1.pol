@@ -561,7 +561,7 @@ def diagram_kolize_jablko_section():
         zvýšení skóre, přidání článku těla a vytvoření nové pozice jablka.
       </p>
       <div class="diagram-image">
-        <img src="diagram_kolize_jablko.png" alt="Vývojový diagram kolize s jablkem">
+        <img src="diagram_kolize_jablko_section.png" alt="Vývojový diagram kolize s jablkem">
       </div>
       <div class="diagram-note">
         Ulož screenshot diagramu do stejné složky jako tento Python soubor pod názvem
@@ -584,7 +584,7 @@ def diagram_kolize_stena_section():
         Pokud ke kolizi dojde, hra končí.
       </p>
       <div class="diagram-image">
-        <img src="diagram_kolize_stena.png" alt="Vývojový diagram kolize se stěnou">
+        <img src="diagram_kolize_stena_section.png" alt="Vývojový diagram kolize se stěnou">
       </div>
       <div class="diagram-note">
         Ulož screenshot diagramu do stejné složky jako tento Python soubor pod názvem
