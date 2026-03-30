@@ -1,0 +1,22 @@
+Traceback (most recent call last):
+  File "C:\Users\mojan\OneDrive\Plocha\diveman\potapec\main.py", line 7, in <module>
+    game.run()
+  File "C:\Users\mojan\OneDrive\Plocha\diveman\potapec\game\game.py", line 263, in run
+    self.menu_loop()
+  File "C:\Users\mojan\OneDrive\Plocha\diveman\potapec\game\game.py", line 285, in menu_loop
+    self.load_map_resources()
+  File "C:\Users\mojan\OneDrive\Plocha\diveman\potapec\game\game.py", line 222, in load_map_resources
+    res = fn()
+          ^^^^
+  File "C:\Users\mojan\OneDrive\Plocha\diveman\potapec\game\game.py", line 208, in <lambda>
+    ("Generating cliffs...", lambda: generate_side_cliffs()),
+                                     ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\mojan\OneDrive\Plocha\diveman\potapec\game\obstacles.py", line 40, in generate_side_cliffs
+    left_new = left_prev + random.randint(200, 25)
+                           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.11_3.11.2544.0_x64__qbz5n2kfra8p0\Lib\random.py", line 362, in randint
+    return self.randrange(a, b+1)
+           ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.11_3.11.2544.0_x64__qbz5n2kfra8p0\Lib\random.py", line 345, in randrange
+    raise ValueError("empty range for randrange() (%d, %d, %d)" % (istart, istop, width))
+ValueError: empty range for randrange() (200, 26, -174)

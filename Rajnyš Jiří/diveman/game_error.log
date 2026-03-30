@@ -1,0 +1,18 @@
+Traceback (most recent call last):
+  File "c:\Users\mojan\OneDrive\Plocha\diveman\potapec\main.py", line 49, in <module>
+    game.run()
+  File "c:\Users\mojan\OneDrive\Plocha\diveman\potapec\game\game.py", line 371, in run
+    self.menu_loop()
+  File "c:\Users\mojan\OneDrive\Plocha\diveman\potapec\game\game.py", line 389, in menu_loop
+    res = self.menu.handle_event(ev)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Users\mojan\OneDrive\Plocha\diveman\potapec\game\menu.py", line 165, in handle_event
+    return self._auth_key(ev)
+           ^^^^^^^^^^^^^^^^^^
+  File "c:\Users\mojan\OneDrive\Plocha\diveman\potapec\game\menu.py", line 227, in _auth_key
+    return self._attempt_login()
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Users\mojan\OneDrive\Plocha\diveman\potapec\game\menu.py", line 283, in _attempt_login
+    return self._login_ok(name, 'Logged in')
+           ^^^^^^^^^^^^^^
+AttributeError: 'Menu' object has no attribute '_login_ok'
