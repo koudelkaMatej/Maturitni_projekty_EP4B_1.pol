@@ -147,7 +147,8 @@ class Minesweeper:
             self.frame.grid_rowconfigure(i, weight=1, minsize=btn_size)
             for j in range(velikost):
                 self.frame.grid_columnconfigure(j, weight=1, minsize=btn_size)
-                b = tk.Button(self.frame, width=btn_size // 7, height=btn_size // 20, command=lambda x=i, y=j: self.odkryj(x, y))
+                font_size = max(10, btn_size // 3)
+                b = tk.Button(self.frame, font=("Arial", font_size, "bold"), command=lambda x=i, y=j: self.odkryj(x, y))
                 b.grid(row=i, column=j, sticky="nsew", padx=1, pady=1)
                 b.bind("<Button-3>", lambda _, x=i, y=j: self.prepni_vlajku(x, y))
                 self.tlacitka[(i, j)] = b
@@ -193,7 +194,9 @@ class Minesweeper:
             self.konec_hry(vyhra=False)
         else:
             cislo = self.minova_pole[x][y]
-            b.config(text=str(cislo) if cislo > 0 else "", state="disabled", relief=tk.SUNKEN)
+            barvy = {1: "blue", 2: "green", 3: "red", 4: "purple", 5: "maroon", 6: "turquoise", 7: "black", 8: "gray"}
+            barva = barvy.get(cislo, "black")
+            b.config(text=str(cislo) if cislo > 0 else "", state="disabled", relief=tk.SUNKEN, disabledforeground=barva, fg=barva)
             self.odkryta += 1
             if cislo == 0:
                 for dx in [-1, 0, 1]:
@@ -208,12 +211,12 @@ class Minesweeper:
         if b["state"] == "disabled":
             return
         if not self.vlajky[x][y]:
-            b.config(text="F")
+            b.config(text="F", fg="red")
             self.vlajky[x][y] = True
             if self.minova_pole[x][y] != -1:
                 self.spatne_vlajky += 1
         else:
-            b.config(text="")
+            b.config(text="", fg="black")
             if self.vlajky[x][y] and self.minova_pole[x][y] != -1:
                 self.spatne_vlajky -= 1
             self.vlajky[x][y] = False
