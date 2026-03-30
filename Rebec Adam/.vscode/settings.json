@@ -1,3 +1,4 @@
 {
-  "cSpell.words": ["consolas", "Nastavení", "Proměnné", "stavu"]
+  "python.defaultInterpreterPath": "${workspaceFolder}\\.venv\\Scripts\\python.exe",
+  "cSpell.words": ["consolas", "Nastaveni", "Promenne", "stavu"]
 }
