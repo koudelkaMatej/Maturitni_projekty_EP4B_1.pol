@@ -8,6 +8,14 @@ def get_db():
 def init_db():
     db = get_db()
     db.execute("""
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT UNIQUE NOT NULL,
+            password_hash TEXT NOT NULL
+        )
+    """)
+
+    db.execute("""
         CREATE TABLE IF NOT EXISTS scores (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             player TEXT NOT NULL,

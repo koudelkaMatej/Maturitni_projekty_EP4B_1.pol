@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <title>Dinnobird 🦖</title>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='Trex.png') }}">
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<div id="app">
+    <header>
+        {% if username %}
+        <div class="user-badge" onclick="toggleLogout()">{{ username[0] | upper }}</div>
+        <div id="logout-panel" class="logout-panel" style="display:none;">
+            <a href="{{ url_for('logout') }}" class="logout-button">Logout</a>
+        </div>
+        {% endif %}
+    </header>
+
+    <!-- DEBUG: toto potvrzuje, že se načítá nový template -->
+    <div id="debug-info" style="position:fixed;bottom:10px;left:10px;background:rgba(0,0,0,0.7);color:#fff;padding:6px 10px;border-radius:6px;z-index:999; font-family:monospace; font-size:12px;">DEBUG MODE: Aktuální template = index.html, params: username={{ username|default('None') }}, error={{ error|default('None') }}</div>
+    {% if not username %}
+    <div class="auth-overlay">
+        <div class="auth-card">
+            <div class="auth-tabs">
+                <button id="login-tab" class="tab active" onclick="setAuthMode('login')">Přihlásit</button>
+                <button id="register-tab" class="tab" onclick="setAuthMode('register')">Registrovat</button>
+            </div>
+            <h2 id="auth-heading">Přihlášení</h2>
+            {% if error %}
+            <div class="auth-error">{{ error }}</div>
+            {% endif %}
+            <form id="auth-form" method="POST" action="{{ url_for('auth') }}">
+                <input required placeholder="Uživatelské jméno" name="username" autocomplete="username" />
+                <input required placeholder="Heslo" name="password" type="password" autocomplete="current-password" />
+                <input id="auth-mode" type="hidden" name="mode" value="login" />
+                <button type="submit" id="auth-submit">Přihlásit</button>
+            </form>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if username %}
+    <div id="leaderboard-section">
+        <table>
+            <tr>
+                <th>#</th>
+                <th>Hráč</th>
+                <th>Skóre</th>
+            </tr>
+            {% for player, score in scores %}
+            <tr>
+                <td>{{ loop.index }}</td>
+                <td>{{ player }}</td>
+                <td>{{ score }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+        <p class="footer">Offline web localhost</p>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+function toggleLogout() {
+    var p = document.getElementById('logout-panel');
+    p.style.display = p.style.display === 'block' ? 'none' : 'block';
+}
+
+function setAuthMode(mode) {
+    var heading = document.getElementById('auth-heading');
+    var submit = document.getElementById('auth-submit');
+    var hidden = document.getElementById('auth-mode');
+    var loginTab = document.getElementById('login-tab');
+    var registerTab = document.getElementById('register-tab');
+
+    if (mode === 'register') {
+        heading.textContent = 'Registrace';
+        submit.textContent = 'Registrovat';
+        hidden.value = 'register';
+        loginTab.classList.remove('active');
+        registerTab.classList.add('active');
+    } else {
+        heading.textContent = 'Přihlášení';
+        submit.textContent = 'Přihlásit';
+        hidden.value = 'login';
+        loginTab.classList.add('active');
+        registerTab.classList.remove('active');
+    }
+}
+</script>
+</body>
+</html>
