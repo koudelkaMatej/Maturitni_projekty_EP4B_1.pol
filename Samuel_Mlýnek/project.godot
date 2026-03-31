@@ -11,6 +11,10 @@ config_version=5
 [application]
 
 config/name="Muskets_and_Swords_ND"
-run/main_scene="uid://cix8qaxh2elxt"
+run/main_scene="uid://dd1ltaxkwhg1b"
 config/features=PackedStringArray("4.5", "Forward Plus")
 config/icon="res://icon.svg"
+
+[autoload]
+
+global="*res://global.gd"

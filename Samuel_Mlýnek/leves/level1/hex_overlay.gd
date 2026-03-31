@@ -11,6 +11,7 @@ var hovered_hex : Vector2i = Vector2i(-999, -999)
 var hex_centers := {} # Vector2i -> Vector
 var reachable_hexes: Array[Vector2i] = []
 var highlighted = []
+var attack_highlighted = []
 const HEX_DIRECTIONS = [
 	Vector2i(1, 0),
 	Vector2i(1, -1),
@@ -20,6 +21,14 @@ const HEX_DIRECTIONS = [
 	Vector2i(0, 1),
 ]
 
+var terrain_textures = {}
+
+func _ready():
+	terrain_textures["plains"]   = load("res://assests/plains_spr.png")
+	terrain_textures["forest"]   = load("res://assests/forest_spr.png")
+	terrain_textures["mountain"] = load("res://assests/hills_spring.png")
+	terrain_textures["water"]    = load("res://assests/water.png")
+	
 signal hex_clicked(hex: Vector2i)
 
 
@@ -96,6 +105,10 @@ func hex_distance(a: Vector2i, b: Vector2i) -> int:
 func highlight_hexes(list):
 	highlighted = list
 	queue_redraw()
+
+func set_attack_highlight(list):
+	attack_highlighted = list
+	queue_redraw()
 # --- Unit shit --- #
 
 func get_neighbors(hex: Vector2i) -> Array:
@@ -162,31 +175,48 @@ func _input(event):
 func _draw():
 	for h in logic.grid.keys():
 		var center = hex_to_pixel(h)
+		var terrain = logic.grid[h]["terrain"]
 		
-		var color = Color.WEB_GREEN
+		# draw texture if we have one, otherwise fallback to color
+		if terrain_textures.has(terrain) and terrain_textures[terrain] != null:
+			var tex = terrain_textures[terrain]
+			var pts = hex_points(center)
+		# UV coordinates map the texture onto the hex shape
+			var uvs = PackedVector2Array()
+			for pt in pts:
+				uvs.append((pt - (center - Vector2(HEX_SIZE, HEX_SIZE))) / (Vector2(HEX_SIZE, HEX_SIZE) * 2))
+			draw_colored_polygon(pts, Color.WHITE, uvs, tex)
+		else:
+			draw_polygon(hex_points(center), PackedColorArray([Color.WEB_GREEN]))
+
+		# keep city colors on top
+		if logic.grid[h]["city"]:
+			var owner = logic.grid[h]["owner"]
+			var city_color: Color
+			if owner == "player":
+				city_color = Color(0.2, 0.4, 1, 0.6)
+			elif owner == "enemy":
+				city_color = Color(1, 0.2, 0.2, 0.6)
+			else:
+				city_color = Color(1, 0.6, 0, 0.6)
+			draw_polygon(hex_points(center), PackedColorArray([city_color]))
+
+		# keep hover and selection on top
 		var railing_color = Color.BLACK
 		var railing_magnitude = 1
-		
 		if h == selected_hex:
-			color = Color.GOLD
+			draw_polygon(hex_points(center), PackedColorArray([Color(1, 0.8, 0, 0.4)]))
 		elif h == hovered_hex:
 			railing_color = Color.BLUE
 			railing_magnitude = 2
-			if logic.grid[h]["city"]:
-				color = Color.ORANGE
-				
-		if logic.grid[h]["city"]:
-			var owner = logic.grid[h]["owner"]
 
-			if owner == "player":
-				color = Color(0.2,0.4,1)
-			elif owner == "enemy":
-				color = Color(1,0.2,0.2)
-			else:
-				color = Color.ORANGE
-			
-		draw_polygon(hex_points(center),PackedColorArray([color]))
 		draw_polyline(hex_points(center), railing_color, railing_magnitude)
+
+	# highlights on top of everything
 	for hex in highlighted:
 		var pos = hex_to_pixel(hex)
-		draw_circle(pos, 20, Color(0,1,0,0.4))
+		draw_circle(pos, 20, Color(0, 1, 0, 0.4))
+
+	for hex in attack_highlighted:
+		var pos = hex_to_pixel(hex)
+		draw_circle(pos, 20, Color(1, 0, 0, 0.4))

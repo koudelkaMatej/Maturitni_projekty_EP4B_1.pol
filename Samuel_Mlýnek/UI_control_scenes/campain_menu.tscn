@@ -34,7 +34,7 @@ layout_mode = 0
 offset_right = 1151.0
 offset_bottom = 649.0
 
-[node name="level_1" type="TextureButton" parent="."]
+[node name="level_1_button" type="TextureButton" parent="."]
 layout_mode = 0
 offset_left = 20.0
 offset_top = 19.0
@@ -43,7 +43,7 @@ offset_bottom = 151.0
 texture_normal = ExtResource("4_x1nhk")
 stretch_mode = 0
 
-[node name="Label" type="Label" parent="level_1"]
+[node name="Label" type="Label" parent="level_1_button"]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -64,7 +64,7 @@ text = "1"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="level_2" type="TextureButton" parent="."]
+[node name="level_2_button" type="TextureButton" parent="."]
 layout_mode = 0
 offset_left = 191.0
 offset_top = 19.0
@@ -73,7 +73,7 @@ offset_bottom = 151.0
 texture_normal = ExtResource("2_di836")
 stretch_mode = 0
 
-[node name="Label" type="Label" parent="level_2"]
+[node name="Label" type="Label" parent="level_2_button"]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -94,7 +94,7 @@ text = "2"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="level_3" type="TextureButton" parent="."]
+[node name="level_3_button" type="TextureButton" parent="."]
 layout_mode = 0
 offset_left = 372.0
 offset_top = 19.0
@@ -103,7 +103,7 @@ offset_bottom = 151.0
 texture_normal = ExtResource("5_m7jvq")
 stretch_mode = 0
 
-[node name="Label" type="Label" parent="level_3"]
+[node name="Label" type="Label" parent="level_3_button"]
 layout_mode = 1
 anchors_preset = -1
 anchor_left = 0.5
@@ -138,7 +138,7 @@ theme_override_font_sizes/font_size = 31
 text = "Main Menu"
 flat = true
 
-[connection signal="button_up" from="level_1" to="." method="_on_level_1_button_up"]
-[connection signal="button_up" from="level_2" to="." method="_on_level_2_button_up"]
-[connection signal="button_up" from="level_3" to="." method="_on_level_3_button_up"]
+[connection signal="button_up" from="level_1_button" to="." method="_on_level_1_button_up"]
+[connection signal="button_up" from="level_2_button" to="." method="_on_level_2_button_up"]
+[connection signal="button_up" from="level_3_button" to="." method="_on_level_3_button_up"]
 [connection signal="button_up" from="return_button" to="." method="_on_return_button_button_up"]

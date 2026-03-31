@@ -1,0 +1,79 @@
+[gd_scene load_steps=4 format=3 uid="uid://dmcvfi37n6yb0"]
+
+[ext_resource type="Script" uid="uid://fqatre0wgneb" path="res://UI_control_scenes/victory_screen.gd" id="1_dhvlc"]
+[ext_resource type="Texture2D" uid="uid://b6n06iej24un" path="res://assests/Screenshot 2025-11-24 at 12-13-04 Image To Pixel Art.png" id="1_ipiq7"]
+[ext_resource type="FontFile" uid="uid://ojj8a3a7lb75" path="res://fonts/IMFellEnglish-Regular.ttf" id="2_dhvlc"]
+
+[node name="Control" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_dhvlc")
+
+[node name="TextureRect" type="TextureRect" parent="."]
+layout_mode = 0
+offset_right = 1149.0
+offset_bottom = 646.0
+texture = ExtResource("1_ipiq7")
+
+[node name="Label" type="Label" parent="."]
+layout_mode = 0
+offset_left = 245.0
+offset_top = 33.0
+offset_right = 939.0
+offset_bottom = 109.0
+theme_override_constants/outline_size = 5
+theme_override_fonts/font = ExtResource("2_dhvlc")
+theme_override_font_sizes/font_size = 59
+text = "Congratulations commander"
+
+[node name="Label2" type="Label" parent="."]
+layout_mode = 0
+offset_left = 407.0
+offset_top = 112.0
+offset_right = 762.0
+offset_bottom = 159.0
+theme_override_constants/outline_size = 3
+theme_override_fonts/font = ExtResource("2_dhvlc")
+theme_override_font_sizes/font_size = 36
+text = "you have won the battle"
+
+[node name="Signs" type="Label" parent="."]
+layout_mode = 0
+offset_left = 442.0
+offset_top = 163.0
+offset_right = 711.0
+offset_bottom = 218.0
+theme_override_colors/font_color = Color(1, 0.12156863, 0.1764706, 1)
+theme_override_constants/outline_size = 3
+theme_override_fonts/font = ExtResource("2_dhvlc")
+theme_override_font_sizes/font_size = 43
+text = "but not the war"
+
+[node name="Next_battle_button" type="Button" parent="."]
+layout_mode = 0
+offset_left = 903.0
+offset_top = 568.0
+offset_right = 1133.0
+offset_bottom = 630.0
+theme_override_constants/outline_size = 3
+theme_override_fonts/font = ExtResource("2_dhvlc")
+theme_override_font_sizes/font_size = 32
+text = "Next battle"
+
+[node name="Main_menu_button" type="Button" parent="."]
+layout_mode = 0
+offset_left = 22.0
+offset_top = 558.0
+offset_right = 237.0
+offset_bottom = 624.0
+theme_override_constants/outline_size = 3
+theme_override_fonts/font = ExtResource("2_dhvlc")
+theme_override_font_sizes/font_size = 32
+text = "Main menu"
+
+[connection signal="pressed" from="Next_battle_button" to="." method="_on_next_battle_button_pressed"]
+[connection signal="pressed" from="Main_menu_button" to="." method="_on_main_menu_button_pressed"]

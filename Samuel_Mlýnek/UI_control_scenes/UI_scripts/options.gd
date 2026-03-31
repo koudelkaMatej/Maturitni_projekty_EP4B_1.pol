@@ -8,20 +8,17 @@ func _ready() -> void:
 func _on_button_pressed() -> void:
 	queue_free()
 
-
 func _on_master_volume_value_changed(value: float) -> void:
 	AudioServer.set_bus_volume_db(
 		AudioServer.get_bus_index("Master"),
 		value
 	)
 	
-
 func _on_music_value_changed(value: float) -> void:
 	AudioServer.set_bus_volume_db(
 		AudioServer.get_bus_index("Music"),
 		value
 	)
-
 
 func _on_sfx_value_changed(value: float) -> void:
 	AudioServer.set_bus_volume_db(
@@ -29,11 +26,9 @@ func _on_sfx_value_changed(value: float) -> void:
 		value
 		)
 
-
 func _on_confirm_pressed() -> void:
 	save_settings()
 	queue_free()
-	
 	
 func save_settings():
 	DirAccess.make_dir_recursive_absolute("user://settings")
