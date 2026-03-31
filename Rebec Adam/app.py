@@ -1,3 +1,4 @@
+import os
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import (
@@ -12,16 +13,22 @@ from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = "maturitni_projekt"  # Změň pro produkci
-app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///pong.db"
+
+# oprava ukládání databáze mimo požadovanou složku
+base_dir = os.path.abspath(os.path.dirname(__file__))
+instance_dir = os.path.join(base_dir, "instance")
+os.makedirs(instance_dir, exist_ok=True)
+
+app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///" + os.path.join(
+    instance_dir, "pong.db"
+)
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 db = SQLAlchemy(app)
 login_manager = LoginManager(app)
 login_manager.login_view = "login"
 
-# ===== DATABÁZOVÉ MODELY =====
-
-
+# databázové modely
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(100), unique=True, nullable=False)
@@ -43,15 +50,13 @@ def load_user(user_id):
     return User.query.get(int(user_id))
 
 
-# ===== WEBOVÉ CESTY (ROUTES) =====
-
-
+# webové cesty
 @app.route("/")
 @login_required
 def home():
     # všechna skóre přihlášeného uživatele
     user_scores = Score.query.filter_by(user_id=current_user.id).all()
-    # 10 nejlepších her globálně podle rozdílu skóre (hráč - bot)
+    # 10 nejlepších her globálně podle rozdílu skóre
     best_scores = (
         Score.query.filter(Score.goals_left > Score.goals_right)
         .order_by((Score.goals_left - Score.goals_right).desc())
@@ -108,7 +113,7 @@ def login():
         .all()
     )
 
-    # Předáme best_scores do šablony
+    # předání best_scores do šablony
     return render_template("login.html", best_scores=best_scores)
 
 
@@ -124,9 +129,7 @@ def about():
     return render_template("about.html")
 
 
-# ===== API PRO TVOJÍ HRU =====
-
-
+#API
 @app.route("/api/check_user", methods=["POST"])
 def check_user():
     data = request.get_json()
@@ -141,7 +144,7 @@ def check_user():
 def save_score():
     data = request.get_json()
 
-    # Hra nám musí poslat email hráče, abychom věděli, komu to přiřadit
+    # Hra musí poslat email hráče
     user = User.query.filter_by(email=data["email"]).first()
 
     if not user:
