@@ -1,0 +1,80 @@
+{
+  "admin": {
+    "password_hash": "scrypt:32768:8:1$RTjOqGgxl5WMdUCr$18104ea906a4965d97b4b73d762218471d9d5d0b307a68c441b6b5f02cc030b6dda81d9baea757f98f7d03b6125a0e5b87f835730774c9cf9c908362b310b3c1",
+    "highscore": 180150,
+    "stats": {
+      "total_spins": 3906,
+      "jackpots": 1332,
+      "max_spins": 27,
+      "lowest_score": 370,
+      "max_score_spin": 9400,
+      "current_jackpot_streak": 0,
+      "max_jackpot_streak": 6
+    }
+  },
+  "tester": {
+    "password_hash": "scrypt:32768:8:1$Nwe18b47XvcgMWwm$0a4b4b902117654da4fc13f79dbfde5bb74e1d33bf398ae52a39805d49153bb5b04fd06f250f7bd32c778acd13732d4d386dd0e5d52e276ca10b2ac4fa9c3e66",
+    "highscore": 147700,
+    "stats": {
+      "total_spins": 1029,
+      "jackpots": 476,
+      "max_spins": 40,
+      "lowest_score": -630,
+      "max_score_spin": 55500,
+      "current_jackpot_streak": 0,
+      "max_jackpot_streak": 7
+    }
+  },
+  "Hozbrok": {
+    "password_hash": "scrypt:32768:8:1$e1nMmZRmf2j3VFLZ$02227bd8862bb9faa0cadb023700b200a8182d0773564d0e99fef5a3b41f311197e33052692deb921985d84040fc7d4f5f402515ed9239a6b1fefba34f9c3b4e",
+    "highscore": 132900,
+    "stats": {
+      "total_spins": 64,
+      "jackpots": 42,
+      "max_spins": 39,
+      "lowest_score": 24330,
+      "max_score_spin": 12000,
+      "current_jackpot_streak": 0,
+      "max_jackpot_streak": 9
+    }
+  },
+  "ovocnyvojtech": {
+    "password_hash": "scrypt:32768:8:1$VGIYk9YmTSzWs7Yh$665fafb8072fec4f72ed2f299b7678d1d6758f978fbc3a79658952f0c924956487996e568bf2f1f1354b1971aad1221e57b45ac9ff363d1ceabf774cf4f38f53",
+    "highscore": 14790,
+    "stats": {
+      "total_spins": 180,
+      "jackpots": 74,
+      "max_spins": 30,
+      "lowest_score": 1410,
+      "max_score_spin": 2700,
+      "current_jackpot_streak": 0,
+      "max_jackpot_streak": 5
+    }
+  },
+  "wiliHAM": {
+    "password_hash": "scrypt:32768:8:1$wd0G76QD03GYWns4$b40db3184bff6dbef8109469eed050ecb24953174226823483b513e9759871b32d112ff195da2845ddc1ff1d6c30362650f56bdd72b870fc4b3d1e052e4ed544",
+    "highscore": 227700,
+    "stats": {
+      "total_spins": 27,
+      "jackpots": 17,
+      "max_spins": 27,
+      "lowest_score": 227700,
+      "max_score_spin": 14400,
+      "current_jackpot_streak": 0,
+      "max_jackpot_streak": 4
+    }
+  },
+  "afroameričan": {
+    "password_hash": "scrypt:32768:8:1$ilL5AEZAtM8TrowP$17382c656e2104f3047f9d56e14c00d69130fc75079f5d69e207effdc560d72d56b3cc45b0d6271322f6c88ab7e2a9bc3d30bbc5c3feef29e9c4e541eef36590",
+    "highscore": 109500,
+    "stats": {
+      "total_spins": 93,
+      "jackpots": 51,
+      "max_spins": 39,
+      "lowest_score": 18450,
+      "max_score_spin": 22500,
+      "current_jackpot_streak": 0,
+      "max_jackpot_streak": 5
+    }
+  }
+}

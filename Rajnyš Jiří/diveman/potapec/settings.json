@@ -1,0 +1,8 @@
+{
+  "menu_music": true,
+  "ingame_music": true,
+  "vfx": true,
+  "menu_volume": 1.0,
+  "ingame_volume": 0.0,
+  "vfx_volume": 1.0
+}
