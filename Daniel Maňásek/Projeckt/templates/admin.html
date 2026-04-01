@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+{% block title %}Admin Panel — Pixel Blackjack{% endblock %}
+
+{% block content %}
+<div class="page-wrap">
+
+  <!-- Header -->
+  <div class="page-head">
+    <h1 class="pixel page-title">🛡️ ADMIN PANEL</h1>
+    <p class="page-sub">Správa hráčů · přihlášen jako <strong style="color:var(--gold)">{{ me }}</strong></p>
+  </div>
+
+  <!-- Summary cards -->
+  <div class="adm-summary">
+    <div class="adm-card">
+      <div class="pixel adm-n">{{ users | length }}</div>
+      <div class="adm-l">Celkem hráčů</div>
+    </div>
+    <div class="adm-card">
+      <div class="pixel adm-n">{{ total_games }}</div>
+      <div class="adm-l">Odehraných her</div>
+    </div>
+    <div class="adm-card">
+      <div class="pixel adm-n gold">{{ "{:,}".format(total_chips) }}</div>
+      <div class="adm-l">Žetonů v oběhu</div>
+    </div>
+    <div class="adm-card">
+      <div class="pixel adm-n" style="color:#e74c3c">
+        {{ users | selectattr('is_banned') | list | length }}
+      </div>
+      <div class="adm-l">Zablokovaných</div>
+    </div>
+  </div>
+
+  <!-- Players table -->
+  <div class="lb-wrap" style="margin-top:1.5rem">
+    <table class="lb-table adm-table">
+      <thead>
+        <tr>
+          <th class="pixel">Hráč</th>
+          <th class="pixel">Žetony</th>
+          <th class="pixel">Hry</th>
+          <th class="pixel">Výhry</th>
+          <th class="pixel">Registrace</th>
+          <th class="pixel">Stav</th>
+          <th class="pixel">Akce</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for u in users %}
+        <tr class="lb-row {% if u.is_banned %}adm-banned{% endif %} {% if u.is_admin %}adm-admin-row{% endif %}">
+          <td>
+            <div style="display:flex;align-items:center;gap:.6rem">
+              {% if u.is_admin %}
+                <span class="pixel adm-badge-admin">👑 ADMIN</span>
+              {% elif u.is_banned %}
+                <span class="pixel adm-badge-ban">🚫 BAN</span>
+              {% endif %}
+              <a href="{{ url_for('profile', username=u.username) }}" class="lb-name">
+                {{ u.username }}
+                {% if u.username == me %}<span class="you-badge">TY</span>{% endif %}
+              </a>
+            </div>
+          </td>
+          <td class="pixel gold">{{ "{:,}".format(u.chips) }}</td>
+          <td class="pixel">{{ u.played or 0 }}</td>
+          <td class="pixel">{{ u.wins or 0 }}</td>
+          <td style="color:var(--dim);font-size:.85rem">{{ u.created_at[:10] if u.created_at else '—' }}</td>
+          <td>
+            {% if u.is_admin %}
+              <span class="pixel" style="font-size:.35rem;color:#f0c030">Chráněný</span>
+            {% elif u.is_banned %}
+              <span class="pixel adm-status-ban">ZABLOKOVÁN</span>
+            {% else %}
+              <span class="pixel adm-status-ok">AKTIVNÍ</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if not u.is_admin %}
+            <div class="adm-actions">
+              <!-- Ban / Unban -->
+              <form method="POST" action="{{ url_for('admin_ban', uid=u.id) }}" style="display:inline">
+                <button type="submit" class="adm-btn {% if u.is_banned %}adm-btn-green{% else %}adm-btn-orange{% endif %}"
+                        onclick="return confirm('{{ 'Odblokovat' if u.is_banned else 'Zablokovat' }} hráče {{ u.username }}?')">
+                  {{ '✅ ODBLOKOVAT' if u.is_banned else '🚫 BLOKOVAT' }}
+                </button>
+              </form>
+              <!-- Reset chips -->
+              <form method="POST" action="{{ url_for('admin_reset_chips', uid=u.id) }}" style="display:inline">
+                <button type="submit" class="adm-btn adm-btn-blue"
+                        onclick="return confirm('Resetovat žetony {{ u.username }} na 500?')">
+                  💰 RESET ŽETONŮ
+                </button>
+              </form>
+              <!-- Reset all stats -->
+              <form method="POST" action="{{ url_for('admin_reset_stats', uid=u.id) }}" style="display:inline">
+                <button type="submit" class="adm-btn adm-btn-yellow"
+                        onclick="return confirm('Smazat VŠECHNY statistiky a achievementy {{ u.username }}?')">
+                  🔄 RESET VŠE
+                </button>
+              </form>
+              <!-- Delete player -->
+              <form method="POST" action="{{ url_for('admin_delete', uid=u.id) }}" style="display:inline">
+                <button type="submit" class="adm-btn adm-btn-red"
+                        onclick="return confirm('SMAZAT hráče {{ u.username }} navždy?')">
+                  🗑️ SMAZAT
+                </button>
+              </form>
+            </div>
+            {% else %}
+            <span style="color:var(--dim);font-size:.8rem">—</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div style="margin-top:1.5rem;padding:1rem 1.4rem;background:rgba(231,76,60,.07);border:1px solid rgba(231,76,60,.25);border-radius:10px;">
+    <span class="pixel" style="font-size:.38rem;color:#e74c3c">⚠ UPOZORNĚNÍ:</span>
+    <span style="font-size:.88rem;color:var(--dim);margin-left:.5rem">
+      Smazání hráče je nevratné. Blokování zamezí přihlášení, ale data zůstanou.
+    </span>
+  </div>
+
+</div>
+{% endblock %}

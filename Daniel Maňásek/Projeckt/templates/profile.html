@@ -1,0 +1,248 @@
+{% extends "base.html" %}
+{% block title %}{{ pu.username }} — Profil{% endblock %}
+
+{% block content %}
+<div class="page-wrap">
+
+  <!-- ── Profile header ──────────────────────────────────────────────── -->
+  <div class="prof-header">
+    <div class="prof-avatar-wrap">
+      <div class="prof-avatar pixel" id="avatarCircle"
+           style="background:{{ pu.avatar_color or '#27ae60' }}">
+        {{ pu.avatar_emoji or '🃏' }}
+      </div>
+      {% if pu.username == me %}
+      <button class="avatar-edit-btn" onclick="openAvatarPicker()" title="Upravit avatar">✏️</button>
+      {% endif %}
+    </div>
+    <div>
+      <div class="pixel prof-name">
+        {{ pu.username }}{% if pu.username==me %} <span class="you-badge">TY</span>{% endif %}
+      </div>
+      <div class="pixel prof-chips gold">{{ "{:,}".format(pu.chips) }} ŽETONŮ</div>
+    </div>
+  </div>
+
+  <!-- ── Avatar picker modal ─────────────────────────────────────────── -->
+  {% if pu.username == me %}
+  <div class="modal-bg hidden" id="avatarModal">
+    <div class="modal-box">
+      <button class="modal-x" onclick="closeAvatarPicker()">✕</button>
+      <div class="pixel modal-title">🎨 UPRAVIT AVATAR</div>
+
+      <div class="av-section-lbl pixel">EMOJI</div>
+      <div class="av-emoji-grid" id="emojiGrid">
+        {% for e in ['🃏','🎰','💎','🦁','🐯','🦊','🐺','🐸','🤖','👻','💀','🎭','🌟','🔥','⚡','🎯'] %}
+        <button class="av-emoji-btn" data-emoji="{{ e }}" onclick="pickEmoji(this)">{{ e }}</button>
+        {% endfor %}
+      </div>
+
+      <div class="av-section-lbl pixel" style="margin-top:1.2rem">BARVA</div>
+      <div class="av-color-grid">
+        {% for col in ['#27ae60','#e74c3c','#3498db','#9b59b6','#f0c030','#e67e22','#1abc9c','#e91e8c','#00bcd4','#ff5722','#607d8b','#ffffff'] %}
+        <button class="av-color-btn" data-color="{{ col }}"
+                style="background:{{ col }}" onclick="pickColor(this)"></button>
+        {% endfor %}
+      </div>
+
+      <div class="av-preview-wrap">
+        <div class="av-preview pixel" id="avPreview"
+             style="background:{{ pu.avatar_color or '#27ae60' }}">
+          {{ pu.avatar_emoji or '🃏' }}
+        </div>
+        <span style="color:var(--dim);font-size:.85rem">Náhled</span>
+      </div>
+
+      <button class="btn btn-deal" onclick="saveAvatar()" style="width:100%;margin-top:1rem">
+        ULOŽIT ▶
+      </button>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- ── Stats grid ──────────────────────────────────────────────────── -->
+  <div class="stats-grid">
+    <div class="stat-card"><div class="pixel stat-n">{{ stats.total or 0 }}</div><div class="stat-l">Odehrané hry</div></div>
+    <div class="stat-card win-card"><div class="pixel stat-n">{{ stats.wins or 0 }}</div><div class="stat-l">Výhry</div></div>
+    <div class="stat-card lose-card"><div class="pixel stat-n">{{ stats.losses or 0 }}</div><div class="stat-l">Prohry</div></div>
+    <div class="stat-card push-card"><div class="pixel stat-n">{{ stats.pushes or 0 }}</div><div class="stat-l">Remízy</div></div>
+    <div class="stat-card bj-card"><div class="pixel stat-n">⚡ {{ stats.blackjacks or 0 }}</div><div class="stat-l">Blackjacky</div></div>
+    <div class="stat-card best-card"><div class="pixel stat-n">{{ "{:+,}".format(stats.best_win or 0) }}</div><div class="stat-l">Nejlepší výhra</div></div>
+  </div>
+
+  {% if stats.total and stats.total > 0 %}
+  <div class="wr-section">
+    <span class="pixel wr-lbl">ÚSPĚŠNOST</span>
+    <div class="wr-track"><div class="wr-fill" style="width:{{ ((stats.wins or 0)/stats.total*100)|round|int }}%"></div></div>
+    <span class="pixel wr-pct">{{ ((stats.wins or 0)/stats.total*100)|round|int }}%</span>
+  </div>
+
+  <!-- ── Chart ───────────────────────────────────────────────────────── -->
+  <div class="chart-wrap">
+    <div class="section-hd pixel">📊 STATISTIKY</div>
+    <div class="chart-inner">
+      <canvas id="statsChart"></canvas>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- ── Achievements ────────────────────────────────────────────────── -->
+  <div class="section-hd pixel">🏅 ACHIEVEMENTY</div>
+  <div class="ach-grid">
+    {% for a in achievements %}
+    <div class="ach-card {% if a.unlocked %}ach-on{% else %}ach-off{% endif %}"
+         {% if a.unlocked %}style="--ac:{{ a.color }}"{% endif %}>
+      <div class="ach-icon">{{ a.icon if a.unlocked else '🔒' }}</div>
+      <div class="pixel ach-name">{{ a.name }}</div>
+      <div class="ach-desc">{{ a.desc }}</div>
+      <div class="pixel ach-rar ach-rar-{{ a.rarity|lower }}">{{ a.rarity }}</div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- ── Game history ────────────────────────────────────────────────── -->
+  <div class="section-hd pixel">📋 POSLEDNÍ HRY</div>
+  <div class="hist-list">
+    {% for g in games %}
+    <div class="hist-row hist-{{ g.result }}">
+      <span class="pixel hist-res">{% if g.result=='win' %}✅{% elif g.result=='lose' %}❌{% else %}🔷{% endif %} {{ g.result.upper() }}</span>
+      <span class="hist-sc">Ty: <b>{{ g.player_score }}</b> · Dealer: <b>{{ g.dealer_score }}</b></span>
+      <span class="hist-bet">Sázka: {{ g.bet }}</span>
+      <span class="pixel hist-net {% if g.net > 0 %}pos{% elif g.net < 0 %}neg{% endif %}">{{ "{:+,}".format(g.net) }}</span>
+      {% if g.had_blackjack %}<span class="pixel hist-bj">⚡ BJ</span>{% endif %}
+      <span class="hist-ts">{{ g.timestamp[:16] }}</span>
+    </div>
+    {% else %}
+    <div class="hist-empty">Žádné hry</div>
+    {% endfor %}
+  </div>
+
+</div>
+{% endblock %}
+
+{% block js %}
+<script src="{{ url_for('static', filename='js/chart.umd.min.js') }}" onerror="window._noChartJS=true"></script>
+<script>
+// ── Chart — funguje s Chart.js i bez nej (canvas fallback) ─────────────────
+{% if stats.total and stats.total > 0 %}
+(function() {
+  const wins   = {{ stats.wins or 0 }};
+  const losses = {{ stats.losses or 0 }};
+  const pushes = {{ stats.pushes or 0 }};
+  const total  = wins + losses + pushes;
+
+  if (!window._noChartJS && typeof Chart !== 'undefined') {
+    // Chart.js je dostupny (online nebo stazeny)
+    const ctx = document.getElementById('statsChart').getContext('2d');
+    new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels: ['Vyhry', 'Prohry', 'Remizy'],
+        datasets: [{
+          data: [wins, losses, pushes],
+          backgroundColor: ['#27ae60','#e74c3c','#3498db'],
+          borderColor: ['#1a7a43','#a93226','#1f618d'],
+          borderWidth: 2, hoverOffset: 8,
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { position: 'bottom', labels: { color: '#e0edd5', font: { family: "'Press Start 2P'", size: 9 }, padding: 16, boxWidth: 14 } },
+          tooltip: { callbacks: { label: (c) => ' ' + c.label + ': ' + c.raw + ' her' } }
+        },
+        cutout: '62%',
+      }
+    });
+  } else {
+    // Offline fallback — vlastni canvas graf
+    const canvas = document.getElementById('statsChart');
+    if (!canvas || total === 0) return;
+    const c = canvas.getContext('2d');
+    canvas.width = 260; canvas.height = 260;
+    const cx = 130, cy = 120, R = 90, r = 55;
+    const slices = [
+      { val: wins,   color: '#27ae60', label: 'Vyhry' },
+      { val: losses, color: '#e74c3c', label: 'Prohry' },
+      { val: pushes, color: '#3498db', label: 'Remizy' },
+    ];
+    let angle = -Math.PI / 2;
+    slices.forEach(s => {
+      if (!s.val) return;
+      const sweep = (s.val / total) * Math.PI * 2;
+      c.beginPath();
+      c.moveTo(cx, cy);
+      c.arc(cx, cy, R, angle, angle + sweep);
+      c.closePath();
+      c.fillStyle = s.color;
+      c.fill();
+      angle += sweep;
+    });
+    // Donut hole
+    c.beginPath(); c.arc(cx, cy, r, 0, Math.PI * 2);
+    c.fillStyle = '#0d1f12'; c.fill();
+    // Center text
+    c.fillStyle = '#e0edd5'; c.font = 'bold 18px Arial'; c.textAlign = 'center';
+    c.fillText(total, cx, cy + 6);
+    c.font = '11px Arial'; c.fillStyle = 'rgba(224,237,213,.5)';
+    c.fillText('her celkem', cx, cy + 22);
+    // Legend
+    let ly = 228;
+    slices.forEach(s => {
+      if (!s.val) return;
+      c.fillStyle = s.color;
+      c.fillRect(cx - 70, ly, 12, 12);
+      c.fillStyle = '#e0edd5'; c.font = '11px Arial'; c.textAlign = 'left';
+      c.fillText(s.label + ': ' + s.val, cx - 54, ly + 10);
+      ly += 18;
+    });
+  }
+})();
+{% endif %}
+
+// ── Avatar picker ──────────────────────────────────────────────────────────
+let pickedEmoji = '{{ pu.avatar_emoji or "🃏" }}';
+let pickedColor = '{{ pu.avatar_color or "#27ae60" }}';
+
+function openAvatarPicker() {
+  document.getElementById('avatarModal').classList.remove('hidden');
+  // Mark current selections
+  document.querySelectorAll('.av-emoji-btn').forEach(b => {
+    b.classList.toggle('av-selected', b.dataset.emoji === pickedEmoji);
+  });
+  document.querySelectorAll('.av-color-btn').forEach(b => {
+    b.classList.toggle('av-selected', b.dataset.color === pickedColor);
+  });
+}
+function closeAvatarPicker() {
+  document.getElementById('avatarModal').classList.add('hidden');
+}
+function pickEmoji(btn) {
+  pickedEmoji = btn.dataset.emoji;
+  document.querySelectorAll('.av-emoji-btn').forEach(b => b.classList.remove('av-selected'));
+  btn.classList.add('av-selected');
+  document.getElementById('avPreview').textContent = pickedEmoji;
+}
+function pickColor(btn) {
+  pickedColor = btn.dataset.color;
+  document.querySelectorAll('.av-color-btn').forEach(b => b.classList.remove('av-selected'));
+  btn.classList.add('av-selected');
+  document.getElementById('avPreview').style.background = pickedColor;
+}
+async function saveAvatar() {
+  const r = await fetch('/api/avatar', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ emoji: pickedEmoji, color: pickedColor })
+  });
+  const d = await r.json();
+  if (d.ok) {
+    document.getElementById('avatarCircle').textContent = pickedEmoji;
+    document.getElementById('avatarCircle').style.background = pickedColor;
+    closeAvatarPicker();
+  }
+}
+document.getElementById('avatarModal')?.addEventListener('click', e => {
+  if (e.target.id === 'avatarModal') closeAvatarPicker();
+});
+</script>
+{% endblock %}

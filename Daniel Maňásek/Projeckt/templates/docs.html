@@ -1,0 +1,187 @@
+{% extends "base.html" %}
+{% block title %}Dokumentace — Pixel Blackjack{% endblock %}
+{% block content %}
+<div class="page-wrap">
+  <div class="page-head">
+    <h1 class="pixel page-title">📁 DOKUMENTACE</h1>
+    <p class="page-sub">Všechny soubory ke stažení offline</p>
+  </div>
+
+  <div class="docs-grid">
+
+    <div class="docs-card">
+      <div class="docs-icon">📊</div>
+      <div class="docs-info">
+        <div class="docs-name pixel">PREZENTACE</div>
+        <div class="docs-desc">Pixel_BlackJack_Prezentace.pptx</div>
+        <div class="docs-type">PowerPoint · .pptx</div>
+      </div>
+      <a href="{{ url_for('docs_download', filename='Pixel_BlackJack_Prezentace.pptx') }}" class="btn-download pixel" download>⬇ STÁHNOUT</a>
+    </div>
+
+    <div class="docs-card">
+      <div class="docs-icon">🔧</div>
+      <div class="docs-info">
+        <div class="docs-name pixel">TECHNICKÁ DOKUMENTACE</div>
+        <div class="docs-desc">technicka_dokumentace_BlackJack.docx</div>
+        <div class="docs-type">Word dokument · .docx</div>
+      </div>
+      <a href="{{ url_for('docs_download', filename='technicka_dokumentace_BlackJack.docx') }}" class="btn-download pixel" download>⬇ STÁHNOUT</a>
+    </div>
+
+    <div class="docs-card">
+      <div class="docs-icon">💻</div>
+      <div class="docs-info">
+        <div class="docs-name pixel">PRŮVODCE PRO VÝVOJÁŘE</div>
+        <div class="docs-desc">BlackJack_nový_vyvojář.docx</div>
+        <div class="docs-type">Word dokument · .docx</div>
+      </div>
+      <a href="{{ url_for('docs_download', filename='BlackJack_nový_vyvojář.docx') }}" class="btn-download pixel" download>⬇ STÁHNOUT</a>
+    </div>
+
+    <div class="docs-card">
+      <div class="docs-icon">📖</div>
+      <div class="docs-info">
+        <div class="docs-name pixel">UŽIVATELSKÝ MANUÁL</div>
+        <div class="docs-desc">BlackJack_uzivatelsky_manual.docx</div>
+        <div class="docs-type">Word dokument · .docx</div>
+      </div>
+      <a href="{{ url_for('docs_download', filename='BlackJack_uzivatelsky_manual.docx') }}" class="btn-download pixel" download>⬇ STÁHNOUT</a>
+    </div>
+
+    <div class="docs-card">
+      <div class="docs-icon">🗺️</div>
+      <div class="docs-info">
+        <div class="docs-name pixel">ARCHITEKTURA SYSTÉMU</div>
+        <div class="docs-desc">architektura_pixel_blackjack.svg</div>
+        <div class="docs-type">Diagram · .svg</div>
+      </div>
+      <div class="docs-btns">
+        <a href="{{ url_for('docs_download', filename='architektura_pixel_blackjack.svg') }}" class="btn-download pixel" download>⬇ STÁHNOUT</a>
+        <a href="{{ url_for('docs_view', filename='architektura_pixel_blackjack.svg') }}" class="btn-view pixel" target="_blank">👁 ZOBRAZIT</a>
+      </div>
+    </div>
+
+    <div class="docs-card">
+      <div class="docs-icon">🔄</div>
+      <div class="docs-info">
+        <div class="docs-name pixel">PRŮBĚH HERNÍHO KOLA</div>
+        <div class="docs-desc">prubeh_herniho_kola.svg</div>
+        <div class="docs-type">Diagram · .svg</div>
+      </div>
+      <div class="docs-btns">
+        <a href="{{ url_for('docs_download', filename='prubeh_herniho_kola.svg') }}" class="btn-download pixel" download>⬇ STÁHNOUT</a>
+        <a href="{{ url_for('docs_view', filename='prubeh_herniho_kola.svg') }}" class="btn-view pixel" target="_blank">👁 ZOBRAZIT</a>
+      </div>
+    </div>
+
+    <div class="docs-card">
+      <div class="docs-icon">🗄️</div>
+      <div class="docs-info">
+        <div class="docs-name pixel">DATABÁZOVÉ SCHÉMA</div>
+        <div class="docs-desc">pixel_blackjack_db_schema.html</div>
+        <div class="docs-type">Schéma · .html</div>
+      </div>
+      <div class="docs-btns">
+        <a href="{{ url_for('docs_download', filename='pixel_blackjack_db_schema.html') }}" class="btn-download pixel" download>⬇ STÁHNOUT</a>
+        <a href="{{ url_for('docs_view', filename='pixel_blackjack_db_schema.html') }}" class="btn-view pixel" target="_blank">👁 ZOBRAZIT</a>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<style>
+.docs-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 1.2rem;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 1rem 3rem;
+}
+
+.docs-card {
+  background: rgba(0,255,100,0.04);
+  border: 2px solid rgba(0,255,100,0.18);
+  border-radius: 8px;
+  padding: 1.3rem 1.4rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.docs-card:hover {
+  border-color: rgba(0,255,100,0.5);
+  background: rgba(0,255,100,0.07);
+}
+
+.docs-icon {
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.docs-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.docs-name {
+  font-size: 0.55rem;
+  color: #40ff80;
+  letter-spacing: 0.05em;
+}
+
+.docs-desc {
+  font-size: 0.78rem;
+  color: #a0a89a;
+  font-family: monospace;
+  word-break: break-all;
+}
+
+.docs-type {
+  font-size: 0.72rem;
+  color: #5a6655;
+}
+
+.btn-download, .btn-view {
+  display: inline-block;
+  padding: 0.55rem 0.9rem;
+  font-size: 0.5rem;
+  text-decoration: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: filter 0.15s;
+  text-align: center;
+}
+
+.btn-download {
+  background: #1a5c2e;
+  color: #40ff80;
+  border: 2px solid #40ff80;
+}
+
+.btn-download:hover {
+  filter: brightness(1.3);
+}
+
+.btn-view {
+  background: #1a2d5c;
+  color: #74b9ff;
+  border: 2px solid #74b9ff;
+}
+
+.btn-view:hover {
+  filter: brightness(1.3);
+}
+
+.docs-btns {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+</style>
+{% endblock %}

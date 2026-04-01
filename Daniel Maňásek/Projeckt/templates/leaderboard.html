@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Žebříček — Pixel Blackjack{% endblock %}
+{% block content %}
+<div class="page-wrap">
+  <div class="page-head">
+    <h1 class="pixel page-title">🏆 ŽEBŘÍČEK</h1>
+    <p class="page-sub">Top hráči podle počtu žetonů</p>
+  </div>
+
+  <div class="lb-wrap">
+    <table class="lb-table">
+      <thead>
+        <tr>
+          <th class="pixel">#</th>
+          <th class="pixel">Hráč</th>
+          <th class="pixel">Žetony</th>
+          <th class="pixel">V / P</th>
+          <th class="pixel">Úsp. %</th>
+          <th class="pixel">BJ ⚡</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in rows %}
+        <tr class="lb-row
+          {% if p.username == me %}lb-me{% endif %}
+          {% if loop.index == 1 %}lb-1{% endif %}
+          {% if loop.index == 2 %}lb-2{% endif %}
+          {% if loop.index == 3 %}lb-3{% endif %}">
+          <td class="pixel rank-cell">
+            {% if loop.index==1 %}👑{% elif loop.index==2 %}🥈{% elif loop.index==3 %}🥉{% else %}{{ loop.index }}{% endif %}
+          </td>
+          <td>
+            <a href="{{ url_for('profile', username=p.username) }}" class="lb-name">
+              {{ p.username }}{% if p.username==me %} <span class="you-badge">TY</span>{% endif %}
+            </a>
+          </td>
+          <td class="pixel gold">{{ "{:,}".format(p.chips) }}</td>
+          <td class="pixel">{{ p.wins or 0 }} / {{ (p.played or 0) - (p.wins or 0) }}</td>
+          <td>
+            <div class="wr-bar-wrap">
+              <div class="wr-bar" style="width:{{ p.win_rate or 0 }}%"></div>
+              <span>{{ p.win_rate or 0 }}%</span>
+            </div>
+          </td>
+          <td class="pixel gold">{{ p.blackjacks or 0 }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6" class="lb-empty">Žádní hráči — buď první!</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
