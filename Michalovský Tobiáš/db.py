@@ -38,3 +38,10 @@ def init_db():
 
     db.commit()
     db.close()
+
+
+def is_registered_user(username):
+    db = get_db()
+    row = db.execute("SELECT id FROM users WHERE username = ?", (username,)).fetchone()
+    db.close()
+    return row is not None
