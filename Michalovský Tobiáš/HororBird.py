@@ -3,10 +3,10 @@ Flappy Dino
 Autor: Toby
 
 Popis:
-- Menu hover efektem.
+- Menu s hover efektem.
 - Okno resizable.
 - HUD se skóre a jménem hráče.
-- Pozadí a překážky nahrazeno reálnými obrázky.
+- Pozadí a překážky nahrazeny reálnými obrázky.
 - Překážky jsou kamenné pilíře: horní a dolní část, mezera je dostatečně velká pro dva ptáčky.
 - Hudba: MP3 soubor přehráván stále dokola.
 """
@@ -14,7 +14,7 @@ Popis:
 import pygame
 import random
 import sys
-from db import init_db, get_db
+from db import init_db, get_db, is_registered_user
 import webbrowser
 import urllib.request
 import urllib.error
@@ -30,6 +30,7 @@ BIRD_IMG_PATH = "imgs/Bird.png"
 BACKGROUND_IMG_PATH = "imgs/Džungle.png"
 PILLAR_IMG_PATH = "imgs/Pilíř2.png"
 MENU_IMG_PATH = "imgs/MenuTitle.png"
+GAME_OVER_IMG_PATH = "imgs/Konec.png"
 
 # Cesta k hudbě
 MUSIC_PATH = "imgs/Untitled #9 - Smáskifa 1 - Sigur Rós.mp3"
@@ -134,22 +135,11 @@ def draw_volume_controls(surface, mute_rect, slider_rect, knob_rect, font, is_mu
     draw_button(surface, mute_rect, "🔇" if is_muted else "🔊", font, False)
     pygame.draw.rect(surface, SLIDER_COLOR, slider_rect)
     pygame.draw.circle(surface, SLIDER_KNOB, knob_rect.center, knob_rect.width//2)
-
-def is_registered_player(name):
-    name = str(name).strip()
-    if not name:
-        return False
-    db = get_db()
-    row = db.execute("SELECT 1 FROM users WHERE username = ?", (name,)).fetchone()
-    db.close()
-    return row is not None
-
 def get_player_name(screen, font):
     name = ""
-    error_message = ""
     entering = True
     clock = pygame.time.Clock()
-    back_rect = pygame.Rect(20, 20, 180, 40)
+
 
     while entering:
         for event in pygame.event.get():
@@ -158,43 +148,22 @@ def get_player_name(screen, font):
                 sys.exit()
 
             if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_ESCAPE:
-                    return None
                 if event.key == pygame.K_RETURN and len(name) > 0:
-                    if is_registered_player(name):
-                        entering = False
-                        error_message = ""
-                    else:
-                        error_message = "None existing name. Register first."
+                    entering = False
                 elif event.key == pygame.K_BACKSPACE:
                     name = name[:-1]
-                    error_message = ""
                 else:
                     if len(name) < 12 and event.unicode.isprintable():
                         name += event.unicode
-                        error_message = ""
-
-            if event.type == pygame.MOUSEBUTTONDOWN:
-                if back_rect.collidepoint(event.pos):
-                    return None
 
         screen.fill((10, 15, 30))
-        title = font.render("Enter player name", True, (240,240,240))
+        title = font.render("Zadej jméno hráče", True, (240,240,240))
         name_txt = font.render(name, True, (0,255,0))
-        hint = font.render("ENTER to continue", True, (200,200,200))
+        hint = font.render("ENTER pro potvrzení", True, (200,200,200))
 
         screen.blit(title, title.get_rect(center=(screen.get_width()//2, screen.get_height()//2 - 60)))
         screen.blit(name_txt, name_txt.get_rect(center=(screen.get_width()//2, screen.get_height()//2)))
         screen.blit(hint, hint.get_rect(center=(screen.get_width()//2, screen.get_height()//2 + 50)))
-
-        back_text = font.render("ESC/menu", True, (250, 220, 100))
-        back_bg = pygame.Rect(back_rect.x, back_rect.y, back_rect.width, back_rect.height)
-        pygame.draw.rect(screen, (40, 40, 40), back_bg, border_radius=8)
-        screen.blit(back_text, back_text.get_rect(center=back_bg.center))
-
-        if error_message:
-            error_txt = font.render(error_message, True, (230, 120, 120))
-            screen.blit(error_txt, error_txt.get_rect(center=(screen.get_width()//2, screen.get_height()//2 + 100)))
 
         pygame.display.flip()
         clock.tick(30)
@@ -276,9 +245,11 @@ def main():
     except:
         print("Menu obrázek se nepodařilo načíst, bude použit text")
         menu_img = None
+
     try:
-        game_over_img = pygame.image.load("imgs/Konec.png")
+        game_over_img = pygame.image.load(GAME_OVER_IMG_PATH)
     except:
+        print("Game over obrázek se nepodařilo načíst, bude použit text")
         game_over_img = None
 
     # Hudba
@@ -298,6 +269,7 @@ def main():
     in_sound_menu = False
     countdown_start = 0
     web_error_message = ""
+    login_error_message = ""
     countdown_duration = 4.0
     fullscreen = False
     running = True
@@ -364,16 +336,20 @@ def main():
                 if in_menu:
                     if button_rect.collidepoint(mx, my):
                         player_name = get_player_name(screen, font)
-                        if player_name is None:
-                            # back/cancel was chosen
-                            continue
-                        in_menu = False
-                        in_countdown = True
-                        countdown_start = pygame.time.get_ticks()
-                        SCREEN_W, SCREEN_H = screen.get_size()
-                        bird, pillars, score, distance, speed, last_spawn, last_top_height = start_new_game(SCREEN_W, SCREEN_H)
-                        game_over = False
-                        score_saved = False
+                        if not player_name:
+                            login_error_message = "Jméno je povinné."
+                        elif not is_registered_user(player_name):
+                            login_error_message = "Uživatel není registrován. Registrovat se můžete na webu." 
+                            player_name = ""
+                        else:
+                            login_error_message = ""
+                            in_menu = False
+                            in_countdown = True
+                            countdown_start = pygame.time.get_ticks()
+                            SCREEN_W, SCREEN_H = screen.get_size()
+                            bird, pillars, score, distance, speed, last_spawn, last_top_height = start_new_game(SCREEN_W, SCREEN_H)
+                            game_over = False
+                            score_saved = False
                     elif website_rect.collidepoint(mx, my):
                         try:
                             urllib.request.urlopen('http://127.0.0.1:5000', timeout=1)
@@ -471,6 +447,10 @@ def main():
             if web_error_message:
                 error_s = font.render(web_error_message, True, (255, 120, 120))
                 screen.blit(error_s, error_s.get_rect(center=(w//2, exit_y + 80)))
+
+            if login_error_message:
+                error_s = font.render(login_error_message, True, (255, 120, 120))
+                screen.blit(error_s, error_s.get_rect(center=(w//2, exit_y + 110)))
 
             pygame.display.flip()
             continue
@@ -590,19 +570,19 @@ def main():
             draw_hud(screen, score, player_name, w, font)
 
             if game_over_img:
-                img_w = min(480, w - 120)
+                max_width = int(w * 0.5)
+                img_w = min(max_width, game_over_img.get_width())
                 img_h = int(game_over_img.get_height() * (img_w / game_over_img.get_width()))
-                img_s = pygame.transform.scale(game_over_img, (img_w, img_h))
-                img_rect = img_s.get_rect(center=(w//2, h//2 - 40))
-                screen.blit(img_s, img_rect)
-                small_sub = pygame.font.SysFont('Verdana', 20, bold=False)
-                sub = small_sub.render("Press R to restart, ESC for menu", True, TEXT_COLOR)
-                screen.blit(sub, sub.get_rect(center=(w//2, img_rect.bottom + 20)))
+                scaled = pygame.transform.scale(game_over_img, (img_w, img_h))
+                screen.blit(scaled, scaled.get_rect(center=(w//2, h//2 - img_h//4)))
+                text_y = h//2 - img_h//4 + img_h//2 + 25
             else:
                 over_text = large_font.render("Game Over", True, (220,40,40))
                 screen.blit(over_text, over_text.get_rect(center=(w//2, h//2-40)))
-                sub = font.render("Press R to restart, ESC for menu", True, TEXT_COLOR)
-                screen.blit(sub, sub.get_rect(center=(w//2, h//2+50)))
+                text_y = h//2 + 10
+
+            sub = font.render("Stiskni R pro restart, ESC pro menu", True, TEXT_COLOR)
+            screen.blit(sub, sub.get_rect(center=(w//2, text_y)))
             draw_volume_controls(screen, mute_rect, slider_rect, knob_rect, font, is_muted)
             pygame.display.flip()
 
