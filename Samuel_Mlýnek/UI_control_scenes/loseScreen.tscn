@@ -1,0 +1,67 @@
+[gd_scene load_steps=4 format=3 uid="uid://0l6ek7dhcmet"]
+
+[ext_resource type="Script" uid="uid://cbjtiwr67pwyn" path="res://UI_control_scenes/lose_screen.gd" id="1_ft2cy"]
+[ext_resource type="Texture2D" uid="uid://b6n06iej24un" path="res://assests/Screenshot 2025-11-24 at 12-13-04 Image To Pixel Art.png" id="1_mbon7"]
+[ext_resource type="FontFile" uid="uid://ojj8a3a7lb75" path="res://fonts/IMFellEnglish-Regular.ttf" id="2_eyji7"]
+
+[node name="Control" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_ft2cy")
+
+[node name="TextureRect" type="TextureRect" parent="."]
+layout_mode = 0
+offset_right = 1149.0
+offset_bottom = 646.0
+texture = ExtResource("1_mbon7")
+
+[node name="Label" type="Label" parent="."]
+layout_mode = 0
+offset_left = 449.0
+offset_top = 25.0
+offset_right = 698.0
+offset_bottom = 101.0
+theme_override_constants/outline_size = 5
+theme_override_fonts/font = ExtResource("2_eyji7")
+theme_override_font_sizes/font_size = 59
+text = "Battle lost"
+
+[node name="Label2" type="Label" parent="."]
+layout_mode = 0
+offset_left = 403.0
+offset_top = 90.0
+offset_right = 758.0
+offset_bottom = 137.0
+theme_override_constants/outline_size = 3
+theme_override_fonts/font = ExtResource("2_eyji7")
+theme_override_font_sizes/font_size = 36
+text = "you have lost the battle"
+
+[node name="Signs" type="Label" parent="."]
+layout_mode = 0
+offset_left = 441.0
+offset_top = 140.0
+offset_right = 710.0
+offset_bottom = 195.0
+theme_override_colors/font_color = Color(0.3806006, 0.54017764, 0.84772176, 1)
+theme_override_constants/outline_size = 3
+theme_override_fonts/font = ExtResource("2_eyji7")
+theme_override_font_sizes/font_size = 43
+text = "but not the war"
+
+[node name="Main_menu_button" type="Button" parent="."]
+layout_mode = 0
+offset_left = 469.0
+offset_top = 306.0
+offset_right = 684.0
+offset_bottom = 372.0
+theme_override_constants/outline_size = 3
+theme_override_fonts/font = ExtResource("2_eyji7")
+theme_override_font_sizes/font_size = 32
+text = "Main menu"
+
+[connection signal="pressed" from="Main_menu_button" to="." method="_on_main_menu_button_pressed"]

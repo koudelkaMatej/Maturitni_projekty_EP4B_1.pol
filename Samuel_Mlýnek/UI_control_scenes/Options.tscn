@@ -1,0 +1,151 @@
+[gd_scene load_steps=4 format=3 uid="uid://8bsfbwwucuad"]
+
+[ext_resource type="Script" uid="uid://v7x6ru82tx68" path="res://UI_control_scenes/UI_scripts/options.gd" id="1_rysse"]
+[ext_resource type="FontFile" uid="uid://ojj8a3a7lb75" path="res://fonts/IMFellEnglish-Regular.ttf" id="2_8cyoj"]
+[ext_resource type="Texture2D" uid="uid://b6n06iej24un" path="res://assests/Screenshot 2025-11-24 at 12-13-04 Image To Pixel Art.png" id="2_yq3sq"]
+
+[node name="Control" type="Control"]
+layout_mode = 3
+anchors_preset = 0
+script = ExtResource("1_rysse")
+
+[node name="Panel" type="Panel" parent="."]
+layout_mode = 1
+offset_top = 1.0
+offset_right = 478.0
+offset_bottom = 294.0
+
+[node name="TextureRect" type="TextureRect" parent="Panel"]
+layout_mode = 0
+offset_right = 530.0
+offset_bottom = 352.0
+texture = ExtResource("2_yq3sq")
+
+[node name="Label" type="Label" parent="Panel"]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -97.0
+offset_top = 18.0
+offset_right = 110.0
+offset_bottom = 60.0
+grow_horizontal = 2
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 4
+theme_override_fonts/font = ExtResource("2_8cyoj")
+theme_override_font_sizes/font_size = 28
+text = "Battle Condicions"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="mute_music" type="CheckBox" parent="Panel"]
+layout_mode = 0
+offset_left = 19.0
+offset_top = 76.0
+offset_right = 137.0
+offset_bottom = 107.0
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 3
+theme_override_fonts/font = ExtResource("2_8cyoj")
+theme_override_font_sizes/font_size = 19
+text = "Mute Music"
+
+[node name="master_volume" type="HSlider" parent="Panel"]
+layout_mode = 0
+offset_left = 20.0
+offset_top = 120.0
+offset_right = 294.0
+offset_bottom = 146.0
+min_value = -30.0
+max_value = 0.0
+step = 0.1
+
+[node name="Label" type="Label" parent="Panel/master_volume"]
+layout_mode = 0
+offset_left = 284.0
+offset_top = 1.0
+offset_right = 403.0
+offset_bottom = 26.0
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 3
+theme_override_fonts/font = ExtResource("2_8cyoj")
+theme_override_font_sizes/font_size = 19
+text = "Master Volume"
+
+[node name="music" type="HSlider" parent="Panel"]
+layout_mode = 0
+offset_left = 18.0
+offset_top = 149.0
+offset_right = 293.0
+offset_bottom = 173.0
+min_value = -30.0
+max_value = 0.0
+step = 0.1
+
+[node name="Label" type="Label" parent="Panel/music"]
+layout_mode = 0
+offset_left = 284.0
+offset_top = -1.0
+offset_right = 329.0
+offset_bottom = 24.0
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 3
+theme_override_fonts/font = ExtResource("2_8cyoj")
+theme_override_font_sizes/font_size = 19
+text = "music"
+
+[node name="SFX" type="HSlider" parent="Panel"]
+layout_mode = 0
+offset_left = 17.0
+offset_top = 177.0
+offset_right = 293.0
+offset_bottom = 200.0
+min_value = -30.0
+max_value = 0.0
+step = 0.1
+
+[node name="Label" type="Label" parent="Panel/SFX"]
+layout_mode = 0
+offset_left = 285.0
+offset_top = -1.0
+offset_right = 325.0
+offset_bottom = 24.0
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 3
+theme_override_fonts/font = ExtResource("2_8cyoj")
+theme_override_font_sizes/font_size = 19
+text = "SFX"
+
+[node name="back" type="Button" parent="Panel"]
+layout_mode = 0
+offset_left = 15.0
+offset_top = 303.0
+offset_right = 70.0
+offset_bottom = 341.0
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 3
+theme_override_fonts/font = ExtResource("2_8cyoj")
+theme_override_font_sizes/font_size = 23
+text = "Back"
+flat = true
+
+[node name="confirm" type="Button" parent="Panel"]
+layout_mode = 0
+offset_left = 426.0
+offset_top = 302.0
+offset_right = 515.0
+offset_bottom = 340.0
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 3
+theme_override_fonts/font = ExtResource("2_8cyoj")
+theme_override_font_sizes/font_size = 23
+text = "Confirm"
+flat = true
+
+[connection signal="toggled" from="Panel/mute_music" to="." method="_on_mute_music_toggled"]
+[connection signal="value_changed" from="Panel/master_volume" to="." method="_on_master_volume_value_changed"]
+[connection signal="value_changed" from="Panel/music" to="." method="_on_music_value_changed"]
+[connection signal="value_changed" from="Panel/SFX" to="." method="_on_sfx_value_changed"]
+[connection signal="pressed" from="Panel/back" to="." method="_on_button_pressed"]
+[connection signal="pressed" from="Panel/confirm" to="." method="_on_confirm_pressed"]

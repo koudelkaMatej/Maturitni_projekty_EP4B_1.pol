@@ -1,0 +1,47 @@
+[gd_scene load_steps=2 format=3 uid="uid://crxvc78ww3m2a"]
+
+[ext_resource type="Script" uid="uid://bdqyout3gga35" path="res://leves/level1/city_menu.gd" id="1_1vo21"]
+
+[node name="City_menu" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_1vo21")
+
+[node name="Panel" type="Panel" parent="."]
+layout_mode = 0
+offset_left = 160.0
+offset_top = 65.0
+offset_right = 1012.0
+offset_bottom = 568.0
+
+[node name="Spawn unit button" type="Button" parent="."]
+layout_mode = 0
+offset_left = 183.0
+offset_top = 85.0
+offset_right = 363.0
+offset_bottom = 134.0
+text = "spawn infantry - cost: 10g"
+
+[node name="Cancle_button" type="Button" parent="."]
+layout_mode = 0
+offset_left = 880.0
+offset_top = 504.0
+offset_right = 980.0
+offset_bottom = 549.0
+text = "cancel"
+
+[node name="Swn_artillery" type="Button" parent="."]
+layout_mode = 0
+offset_left = 184.0
+offset_top = 147.0
+offset_right = 364.0
+offset_bottom = 192.0
+text = "spawn artillery - cost: 15g"
+
+[connection signal="pressed" from="Spawn unit button" to="." method="_on_spawn_unit_button_pressed"]
+[connection signal="pressed" from="Cancle_button" to="." method="_on_cancle_button_pressed"]
+[connection signal="pressed" from="Swn_artillery" to="." method="_on_swn_artillery_pressed"]
