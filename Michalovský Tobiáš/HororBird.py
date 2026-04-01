@@ -1,14 +1,14 @@
 """
-Flappy Dino - plně flexibilní temná verze s kamennými pilíři a hudbou
+Flappy Dino
 Autor: Toby
 
 Popis:
-- Menu s moderním tlačítkem Hrát s hover efektem.
-- Okno resizable + fullscreen (klávesa F).
-- HUD se skóre a vzdáleností s elegantním fontem.
-- Pozadí a překážky lze nahradit reálnými obrázky.
+- Menu hover efektem.
+- Okno resizable.
+- HUD se skóre a jménem hráče.
+- Pozadí a překážky nahrazeno reálnými obrázky.
 - Překážky jsou kamenné pilíře: horní a dolní část, mezera je dostatečně velká pro dva ptáčky.
-- Hudba: MP3 soubor přehráván stále dokola + tlačítko ztlumit a posuvník hlasitosti v levém dolním rohu.
+- Hudba: MP3 soubor přehráván stále dokola.
 """
 
 import pygame
