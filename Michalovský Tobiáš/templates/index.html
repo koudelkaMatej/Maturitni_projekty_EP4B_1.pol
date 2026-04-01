@@ -56,6 +56,16 @@
             </tr>
             {% endfor %}
         </table>
+        <div class="diagram-container">
+            <div class="diagram-item">
+                <h3>Vývojový diagram</h3>
+                <img src="{{ url_for('static', filename='diagram1.png') }}" alt="Vývojový diagram">
+            </div>
+            <div class="diagram-item">
+                <h3>ER diagram</h3>
+                <img src="{{ url_for('static', filename='diagram2.png') }}" alt="ER diagram">
+            </div>
+        </div>
         <p class="footer">Offline web localhost</p>
     </div>
     {% endif %}
