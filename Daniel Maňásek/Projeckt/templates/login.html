@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pixel Blackjack — Přihlášení</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='fonts/fonts.css') }}" onerror="this.remove()">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Outfit:wght@400;600&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+<style>
+  /* Tab switcher */
+  .tabs { display:flex; gap:.5rem; margin-bottom:2rem; }
+  .tab-btn {
+    flex:1; font-family:'Press Start 2P',monospace; font-size:.42rem;
+    padding:.7rem; border-radius:8px; border:2px solid rgba(240,192,48,.3);
+    background:transparent; color:rgba(224,237,213,.45); cursor:pointer;
+    transition:all .2s; letter-spacing:1px;
+  }
+  .tab-btn.active {
+    background:rgba(240,192,48,.15); color:#f0c030;
+    border-color:rgba(240,192,48,.7);
+  }
+  .tab-btn:hover:not(.active) { border-color:rgba(240,192,48,.5); color:rgba(224,237,213,.8); }
+
+  /* Password strength bar */
+  .strength-wrap { margin-top:.5rem; height:4px; background:rgba(255,255,255,.1); border-radius:2px; overflow:hidden; }
+  .strength-bar  { height:100%; border-radius:2px; transition:width .3s, background .3s; width:0%; }
+
+  /* Eye toggle */
+  .pass-wrap { position:relative; }
+  .pass-wrap .field-input { padding-right:3rem; }
+  .eye-btn {
+    position:absolute; right:.8rem; top:50%; transform:translateY(-50%);
+    background:none; border:none; cursor:pointer; font-size:1.1rem; color:rgba(224,237,213,.5);
+    transition:color .2s;
+  }
+  .eye-btn:hover { color:#f0c030; }
+
+  /* Panel section anim */
+  .tab-panel { display:none; }
+  .tab-panel.active { display:block; animation:fadeIn .2s ease; }
+  @keyframes fadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:none} }
+</style>
+</head>
+<body class="login-body">
+<div class="scanlines"></div>
+
+<div class="login-bg-img" style="background-image:url('{{ url_for('static',filename='img/casino_bg.png') }}')"></div>
+<div class="login-overlay"></div>
+
+<div class="floaters">
+  {% for c in ['ace_of_spades','king_of_hearts','queen_of_diamonds','jack_of_clubs'] %}
+  <img class="floater" src="{{ url_for('static',filename='img/cards/'+c+'.png') }}" alt="">
+  {% endfor %}
+</div>
+
+<div class="login-wrap">
+  <div class="login-box">
+
+    <div class="login-logo">
+      <div class="pixel big-title">PIXEL</div>
+      <div class="pixel big-title gold">BLACKJACK</div>
+      <div class="pixel suit-row">♠ ♥ ♦ ♣</div>
+    </div>
+
+    <!-- Tab buttons -->
+    <div class="tabs">
+      <button class="tab-btn active" id="tabLogin" onclick="switchTab('login')">PŘIHLÁSIT</button>
+      <button class="tab-btn"        id="tabReg"   onclick="switchTab('register')">REGISTRACE</button>
+    </div>
+
+    {% if err %}
+    <div class="field-err" style="margin-bottom:1rem;font-size:.42rem">⚠ {{ err }}</div>
+    {% endif %}
+
+    <!-- LOGIN panel -->
+    <div class="tab-panel active" id="panelLogin">
+      <form method="POST" action="{{ url_for('login') }}">
+        <input type="hidden" name="action" value="login">
+
+        <div class="field-wrap">
+          <label class="field-label pixel">JMÉNO</label>
+          <input type="text" name="username" class="field-input pixel"
+                 placeholder="HRÁČ_1" maxlength="16" autocomplete="username"
+                 value="{{ request.form.get('username','') if err else '' }}" autofocus>
+        </div>
+
+        <div class="field-wrap">
+          <label class="field-label pixel">HESLO</label>
+          <div class="pass-wrap">
+            <input type="password" name="password" id="loginPass" class="field-input pixel"
+                   placeholder="••••••••" autocomplete="current-password">
+            <button type="button" class="eye-btn" onclick="toggleEye('loginPass',this)">👁️</button>
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-start">PŘIHLÁSIT &nbsp;▶</button>
+      </form>
+      <p class="login-hint">Nemáš účet? Klikni na <strong>REGISTRACE</strong></p>
+    </div>
+
+    <!-- REGISTER panel -->
+    <div class="tab-panel" id="panelRegister">
+      <form method="POST" action="{{ url_for('login') }}">
+        <input type="hidden" name="action" value="register">
+
+        <div class="field-wrap">
+          <label class="field-label pixel">JMÉNO</label>
+          <input type="text" name="username" class="field-input pixel"
+                 placeholder="HRÁČ_1" maxlength="16" autocomplete="username">
+        </div>
+
+        <div class="field-wrap">
+          <label class="field-label pixel">HESLO</label>
+          <div class="pass-wrap">
+            <input type="password" name="password" id="regPass" class="field-input pixel"
+                   placeholder="••••••••" autocomplete="new-password"
+                   oninput="checkStrength(this.value)">
+            <button type="button" class="eye-btn" onclick="toggleEye('regPass',this)">👁️</button>
+          </div>
+          <div class="strength-wrap">
+            <div class="strength-bar" id="strengthBar"></div>
+          </div>
+          <div class="pixel" id="strengthLabel"
+               style="font-size:.32rem;margin-top:.4rem;color:rgba(224,237,213,.4)">
+            min. 4 znaky
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-start">VYTVOŘIT ÚČET &nbsp;▶</button>
+      </form>
+      <p class="login-hint">Máš účet? Klikni na <strong>PŘIHLÁSIT</strong></p>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// Switch between login / register tabs
+function switchTab(tab) {
+  document.getElementById('panelLogin').classList.toggle('active',    tab==='login');
+  document.getElementById('panelRegister').classList.toggle('active', tab==='register');
+  document.getElementById('tabLogin').classList.toggle('active', tab==='login');
+  document.getElementById('tabReg').classList.toggle('active',   tab==='register');
+}
+
+// Show/hide password
+function toggleEye(inputId, btn) {
+  const inp = document.getElementById(inputId);
+  if (inp.type === 'password') { inp.type = 'text';     btn.textContent = '🙈'; }
+  else                         { inp.type = 'password'; btn.textContent = '👁️'; }
+}
+
+// Password strength indicator
+function checkStrength(val) {
+  const bar   = document.getElementById('strengthBar');
+  const label = document.getElementById('strengthLabel');
+  let score = 0;
+  if (val.length >= 4)  score++;
+  if (val.length >= 8)  score++;
+  if (/[0-9]/.test(val)) score++;
+  if (/[^a-zA-Z0-9]/.test(val)) score++;
+
+  const levels = [
+    { w:'0%',   bg:'transparent', txt:'min. 4 znaky' },
+    { w:'25%',  bg:'#e74c3c',     txt:'Slabé' },
+    { w:'55%',  bg:'#e67e22',     txt:'Střední' },
+    { w:'80%',  bg:'#f0c030',     txt:'Dobré' },
+    { w:'100%', bg:'#2ecc71',     txt:'Silné 💪' },
+  ];
+  const l = levels[score];
+  bar.style.width      = l.w;
+  bar.style.background = l.bg;
+  label.textContent    = l.txt;
+  label.style.color    = l.bg === 'transparent' ? 'rgba(224,237,213,.4)' : l.bg;
+}
+
+// If there's an error, stay on the right tab
+{% if err %}
+const errMsg = {{ err | tojson }};
+if (errMsg.includes('existuje') || errMsg.includes('Špatné heslo') || errMsg.includes('neexistuje')) {
+  // login error
+  switchTab('login');
+} else {
+  switchTab('register');
+}
+{% endif %}
+</script>
+</body>
+</html>

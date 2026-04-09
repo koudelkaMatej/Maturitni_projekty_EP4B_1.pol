@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+{% block title %}Pixel Blackjack — Hrát{% endblock %}
+
+{% block content %}
+<div class="game-wrap">
+
+  <!-- Achievement popup -->
+  <div class="ach-popup" id="achPopup">
+    <div class="ach-popup-inner">
+      <div class="ach-popup-icon" id="apIcon">⭐</div>
+      <div>
+        <div class="pixel ach-popup-label">ACHIEVEMENT ODEMČEN</div>
+        <div class="pixel ach-popup-name" id="apName">–</div>
+        <div class="ach-popup-desc" id="apDesc">–</div>
+        <div class="pixel ach-popup-rar" id="apRar">–</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bankruptcy modal -->
+  <div class="modal-bg hidden" id="brokeModal">
+    <div class="modal-box">
+      <div style="font-size:3rem">💸</div>
+      <div class="pixel modal-title">BANKROT!</div>
+      <p class="modal-body">Došly ti žetony.<br>Chceš si dobít 500?</p>
+      <button class="btn btn-start" onclick="doRefill()">DOBÍT 500 ▶</button>
+    </div>
+  </div>
+
+  <!-- Rules modal -->
+  <div class="modal-bg hidden" id="rulesModal">
+    <div class="modal-box modal-wide">
+      <button class="modal-x" onclick="closeRules()">✕</button>
+      <div class="pixel modal-title">📖 PRAVIDLA</div>
+      <div class="rules-grid">
+        <div class="rules-sec"><div class="pixel rules-h">🃏 CÍL</div><p>Dostat se co nejblíže k 21 bez přetažení. Poraz dealera.</p></div>
+        <div class="rules-sec"><div class="pixel rules-h">💡 HODNOTY</div><ul><li><b>2–10</b> → nominální hodnota</li><li><b>J, Q, K</b> → 10 bodů</li><li><b>Eso</b> → 11 nebo 1</li></ul></div>
+        <div class="rules-sec"><div class="pixel rules-h">🎯 AKCE</div><ul><li><b>HIT</b> — vezmi kartu <kbd>H</kbd></li><li><b>STAND</b> — zastav <kbd>S</kbd></li><li><b>DOUBLE</b> — zdvoj sázku, 1 karta <kbd>D</kbd></li></ul></div>
+        <div class="rules-sec"><div class="pixel rules-h">💰 VÝPLATY</div><ul><li><b>Výhra</b> → sázka ×2</li><li><b>Blackjack</b> → sázka ×2.5</li><li><b>Remíza</b> → vrácení sázky</li><li><b>Prohra</b> → ztráta sázky</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Top status bar -->
+  <div class="status-bar">
+    <div class="status-item"><span class="pixel status-lbl">HRÁČ</span><span class="pixel status-val">{{ user.username }}</span></div>
+    <div class="status-item"><span class="pixel status-lbl">ŽETONY</span><span class="pixel status-val gold" id="chipCount">{{ user.chips }}</span></div>
+    <div class="status-item"><span class="pixel status-lbl">SÁZKA</span><span class="pixel status-val" id="betCount">—</span></div>
+    <div class="status-item"><span class="pixel status-lbl">SÉRIE</span><span class="pixel status-val" id="streakCount">—</span></div>
+    <button class="icon-btn" onclick="openRules()" title="Pravidla">?</button>
+    <button class="icon-btn" id="soundBtn" onclick="toggleSound()" title="Zvuk">🔊</button>
+  </div>
+
+  <!-- Table felt using their background image -->
+  <div class="table-felt" style="background-image:url('{{ url_for('static',filename='img/table_bg.png') }}')">
+    <div class="table-inner">
+
+      <div class="hand-zone">
+        <div class="zone-label pixel">DEALER <span class="val-badge" id="dv">?</span></div>
+        <div class="hand" id="dealerHand"><div class="empty-hand pixel">Čeká…</div></div>
+      </div>
+
+      <div class="result-msg pixel" id="resultMsg"></div>
+
+      <div class="hand-zone">
+        <div class="zone-label pixel">TY <span class="val-badge" id="pv">?</span></div>
+        <div class="hand" id="playerHand"><div class="empty-hand pixel">Vsaď a klikni DEAL!</div></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Controls -->
+  <div class="ctrl-panel">
+
+    <!-- Bet phase -->
+    <div id="ctrlBet">
+      <div class="pixel ctrl-label">VYBER SÁZKU</div>
+      <div class="chip-row">
+        {% for val, name in [(10,'10'),(25,'25'),(50,'50'),(100,'100')] %}
+        <button class="chip-btn" onclick="addBet({{ val }})">
+          <img src="{{ url_for('static',filename='img/chips/'+name+'.png') }}" alt="{{ val }}">
+          <span class="pixel chip-val">{{ val }}</span>
+        </button>
+        {% endfor %}
+        <button class="chip-btn chip-max" onclick="betMax()"><span class="pixel">MAX</span></button>
+      </div>
+      <div class="bet-row">
+        <input type="number" id="betInput" class="bet-input pixel" value="50" min="1" placeholder="50">
+        <button class="clr-btn pixel" onclick="clearBet()">CLR</button>
+      </div>
+      <button class="btn btn-deal" onclick="startGame()">DEAL &nbsp;▶</button>
+    </div>
+
+    <!-- Play phase -->
+    <div id="ctrlPlay" class="hidden">
+      <button class="btn btn-hit"    id="btnHit"    onclick="doHit()">HIT <kbd>H</kbd></button>
+      <button class="btn btn-stand"  id="btnStand"  onclick="doStand()">STAND <kbd>S</kbd></button>
+      <button class="btn btn-double" id="btnDouble" onclick="doDouble()">DOUBLE <kbd>D</kbd></button>
+    </div>
+
+    <!-- After round -->
+    <div id="ctrlNext" class="hidden">
+      <button class="btn btn-deal" onclick="resetRound()">NOVÁ RUNDA &nbsp;▶</button>
+    </div>
+
+  </div>
+</div>
+
+<script>
+let currentChips = {{ user.chips }};
+// Correct static path from Flask so card images always load
+const CARDS_URL = "{{ url_for('static', filename='img/cards/') }}";
+const CHIPS_URL = "{{ url_for('static', filename='img/chips/') }}";
+{% if is_new %}
+setTimeout(()=>{
+  showToast('👋 Vítej, {{ user.username }}! Máš 500 žetonů. Hodně štěstí!');
+},600);
+{% endif %}
+</script>
+{% endblock %}

@@ -80,7 +80,19 @@ def register():
             flash("Uživatel už existuje.")
             return redirect(url_for("register"))
 
-        users[username] = {"password_hash": generate_password_hash(password)}
+        users[username] = {
+            "password_hash": generate_password_hash(password),
+            "highscore": 0,
+            "stats": {
+                "total_spins": 0,
+                "jackpots": 0,
+                "max_spins": 0,
+                "lowest_score": None,
+                "max_score_spin": 0,
+                "current_jackpot_streak": 0,
+                "max_jackpot_streak": 0
+            }
+        }
         save_json(USERS_FILE, users)
 
         session["user"] = username
@@ -100,20 +112,17 @@ def leaderboard():
     if not current_user():
         return redirect(url_for("login"))
 
-    lb = load_json(LEADERBOARD_FILE, [])
+    users = load_json(USERS_FILE, {})
+
     rows = []
-    if isinstance(lb, list):
-        for item in lb:
-            name = item.get("name") or item.get("user") or "?"
-            score = item.get("score") or 0
-            rows.append((name, score))
-    elif isinstance(lb, dict):
-        for name, score in lb.items():
-            rows.append((name, score))
+    for username, data in users.items():
+        score = data.get("highscore", 0)
+        rows.append((username, score))
 
     rows.sort(key=lambda x: x[1], reverse=True)
 
-    stats = load_json(STATS_FILE, {
+    user = current_user()
+    stats = users.get(user, {}).get("stats", {
         "total_spins": 0,
         "max_spins": 0,
         "jackpots": 0,
@@ -122,7 +131,9 @@ def leaderboard():
         "lowest_score": None
     })
 
-    return render_template("leaderboard.html", user=current_user(), rows=rows, stats=stats)
+    highscore = users.get(user, {}).get("highscore", 0)
+
+    return render_template("leaderboard.html", user=user, rows=rows, stats=stats, highscore=highscore)
 
 if __name__ == "__main__":
     app.run(debug=True)

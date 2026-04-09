@@ -1,0 +1,61 @@
+[gd_scene load_steps=2 format=3 uid="uid://dd1ltaxkwhg1b"]
+
+[ext_resource type="Script" uid="uid://b2khxgcka2o4w" path="res://UI_control_scenes/screening.gd" id="1_ptfi3"]
+
+[node name="Control" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_ptfi3")
+
+[node name="Panel" type="Panel" parent="."]
+layout_mode = 0
+offset_right = 562.0
+offset_bottom = 378.0
+
+[node name="VBoxContainer" type="VBoxContainer" parent="."]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="Label" type="Label" parent="VBoxContainer"]
+layout_mode = 2
+text = "Welcome"
+
+[node name="Username" type="LineEdit" parent="VBoxContainer"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="VBoxContainer/Username"]
+layout_mode = 0
+offset_left = 160.0
+offset_top = 7.0
+offset_right = 239.0
+offset_bottom = 30.0
+text = "username"
+
+[node name="Password" type="LineEdit" parent="VBoxContainer"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="VBoxContainer/Password"]
+layout_mode = 0
+offset_left = 160.0
+offset_top = 3.0
+offset_right = 235.0
+offset_bottom = 26.0
+text = "password"
+
+[node name="log_in" type="Button" parent="VBoxContainer"]
+layout_mode = 2
+text = "Login"
+
+[node name="guest" type="Button" parent="VBoxContainer"]
+layout_mode = 2
+text = "Continue as guest"
+
+[node name="HTTPRequest" type="HTTPRequest" parent="."]
+
+[connection signal="pressed" from="VBoxContainer/log_in" to="." method="_on_log_in_pressed"]
+[connection signal="pressed" from="VBoxContainer/guest" to="." method="_on_guest_pressed"]

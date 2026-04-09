@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Pcherské Legendy - Registrace</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <nav class="top-bar">
+        <div class="nav-container">
+            <a href="/" class="nav-link">Přihlášení</a>
+            <a href="/register" class="nav-link active">Registrace</a>
+            <a href="/characters" class="nav-link">Postavy</a>
+            <a href="/highscores" class="nav-link">Žebříček</a>
+            <a href="/manual" class="nav-link">Manuál</a>
+            <a href="/diagramy" class="nav-link">Diagramy</a>
+        </div>
+    </nav>
+    <div class="container">
+        <h2>Registrace</h2>
+        <div class="input-row">
+            <label>Uživatelské Jméno:</label>
+            <input type="text" id="username">
+        </div>
+        <div class="input-row">
+            <label>Heslo:</label>
+            <input type="password" id="password">
+        </div>
+        <button class="button-blue" style="width:100%" onclick="register()">Vytvořit Účet</button>
+        <div class="links">
+            <a href="/login">Přihlásit Se</a>
+        </div>
+        <div id="error" class="error" style="color:#ef4444; margin-top:10px;"></div>
+    </div>
+
+    <script>
+        async function register() {
+            const response = await fetch('/api/register', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    username: document.getElementById('username').value,
+                    password: document.getElementById('password').value
+                })
+            });
+            const data = await response.json();
+            
+            if (data.success) {
+                alert('Account created! Please login.');
+                window.location.href = '/login';
+            } else {
+                document.getElementById('error').textContent = data.message;
+            }
+        }
+    </script>
+</body>
+</html>

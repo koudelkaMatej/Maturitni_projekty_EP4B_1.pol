@@ -1,0 +1,1470 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DinnoBird – Flappy Dino Game</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Rajdhani:wght@400;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0a0f0a;
+      --bg2: #0e1a0e;
+      --bg3: #111d11;
+      --panel: #131f13;
+      --panel2: #182018;
+      --border: #2a4a2a;
+      --border2: #1e3a1e;
+      --green: #39ff14;
+      --green2: #22cc00;
+      --green3: #0d6e0d;
+      --red: #ff3a3a;
+      --amber: #ffcc00;
+      --text: #d0e8d0;
+      --text2: #8aaa8a;
+      --text3: #567056;
+      --pixel: 'Press Start 2P', monospace;
+      --body: 'Rajdhani', sans-serif;
+      --mono: 'Share Tech Mono', monospace;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--body);
+      font-size: 17px;
+      line-height: 1.7;
+      overflow-x: hidden;
+    }
+
+    /* ---- SCANLINE OVERLAY ---- */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.08) 2px, rgba(0,0,0,0.08) 4px);
+      pointer-events: none;
+      z-index: 9999;
+    }
+
+    /* ---- NOISE TEXTURE ---- */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      opacity: 0.03;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 9998;
+    }
+
+    /* ---- NAV ---- */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 1000;
+      background: rgba(10,15,10,0.92);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 2rem;
+      height: 60px;
+    }
+
+    .nav-logo {
+      font-family: var(--pixel);
+      font-size: 10px;
+      color: var(--green);
+      text-shadow: 0 0 10px rgba(57,255,20,0.5);
+      letter-spacing: 1px;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 2rem;
+      list-style: none;
+    }
+
+    .nav-links a {
+      font-family: var(--mono);
+      font-size: 13px;
+      color: var(--text2);
+      text-decoration: none;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      transition: color 0.2s, text-shadow 0.2s;
+    }
+
+    .nav-links a:hover {
+      color: var(--green);
+      text-shadow: 0 0 8px rgba(57,255,20,0.6);
+    }
+
+    .nav-user {
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--amber);
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .nav-user a {
+      color: var(--text3);
+      text-decoration: none;
+      font-size: 11px;
+      letter-spacing: 1px;
+      border: 1px solid var(--border);
+      padding: 4px 10px;
+      transition: all 0.2s;
+    }
+
+    .nav-user a:hover {
+      border-color: var(--green3);
+      color: var(--green);
+    }
+
+    /* ---- HERO ---- */
+    #hero {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      padding: 80px 2rem 4rem;
+      overflow: hidden;
+    }
+
+    .hero-grid {
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(57,255,20,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(57,255,20,0.03) 1px, transparent 1px);
+      background-size: 60px 60px;
+      animation: gridScroll 20s linear infinite;
+    }
+
+    @keyframes gridScroll {
+      from { background-position: 0 0; }
+      to { background-position: 0 60px; }
+    }
+
+    .hero-glow {
+      position: absolute;
+      width: 600px;
+      height: 600px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(57,255,20,0.06) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .hero-content {
+      position: relative;
+      text-align: center;
+      z-index: 2;
+    }
+
+    .hero-badge {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--green3);
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      margin-bottom: 1.5rem;
+      display: block;
+    }
+
+    .hero-title {
+      font-family: var(--pixel);
+      font-size: clamp(24px, 5vw, 52px);
+      color: var(--green);
+      text-shadow:
+        0 0 20px rgba(57,255,20,0.8),
+        0 0 60px rgba(57,255,20,0.3),
+        0 0 100px rgba(57,255,20,0.15);
+      line-height: 1.4;
+      margin-bottom: 1rem;
+      animation: flicker 4s ease-in-out infinite;
+    }
+
+    @keyframes flicker {
+      0%, 90%, 100% { opacity: 1; }
+      92% { opacity: 0.8; }
+      94% { opacity: 1; }
+      96% { opacity: 0.7; }
+      98% { opacity: 1; }
+    }
+
+    .hero-sub {
+      font-family: var(--mono);
+      font-size: 14px;
+      color: var(--text2);
+      letter-spacing: 2px;
+      margin-bottom: 3rem;
+    }
+
+    .pixel-bird {
+      font-size: 80px;
+      display: block;
+      margin: 1rem auto 2rem;
+      animation: birdFloat 3s ease-in-out infinite;
+      filter: drop-shadow(0 0 20px rgba(57,255,20,0.4));
+    }
+
+    @keyframes birdFloat {
+      0%, 100% { transform: translateY(0px) rotate(-5deg); }
+      50% { transform: translateY(-20px) rotate(5deg); }
+    }
+
+    .btn-group {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .btn-primary {
+      font-family: var(--pixel);
+      font-size: 9px;
+      background: var(--green);
+      color: #000;
+      border: none;
+      padding: 14px 28px;
+      cursor: pointer;
+      letter-spacing: 1px;
+      transition: all 0.15s;
+      text-decoration: none;
+      display: inline-block;
+      clip-path: polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%);
+    }
+
+    .btn-primary:hover {
+      background: #fff;
+      transform: translateY(-2px);
+      box-shadow: 0 8px 30px rgba(57,255,20,0.5);
+    }
+
+    .btn-secondary {
+      font-family: var(--pixel);
+      font-size: 9px;
+      background: transparent;
+      color: var(--green);
+      border: 1px solid var(--green3);
+      padding: 13px 24px;
+      cursor: pointer;
+      letter-spacing: 1px;
+      transition: all 0.15s;
+      text-decoration: none;
+      display: inline-block;
+    }
+
+    .btn-secondary:hover {
+      border-color: var(--green);
+      box-shadow: 0 0 20px rgba(57,255,20,0.2);
+      transform: translateY(-2px);
+    }
+
+    .scroll-hint {
+      position: absolute;
+      bottom: 2rem;
+      left: 50%;
+      transform: translateX(-50%);
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--text3);
+      letter-spacing: 2px;
+      animation: bounce 2s ease-in-out infinite;
+    }
+
+    @keyframes bounce {
+      0%, 100% { transform: translateX(-50%) translateY(0); }
+      50% { transform: translateX(-50%) translateY(8px); }
+    }
+
+    /* ---- SECTION BASE ---- */
+    section {
+      padding: 6rem 2rem;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    section.full-width {
+      max-width: 100%;
+      padding: 6rem 0;
+    }
+
+    .section-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 2rem;
+    }
+
+    .section-label {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--green3);
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+    }
+
+    .section-title {
+      font-family: var(--pixel);
+      font-size: clamp(14px, 2.5vw, 22px);
+      color: var(--green);
+      margin-bottom: 2.5rem;
+      text-shadow: 0 0 15px rgba(57,255,20,0.3);
+    }
+
+    .divider {
+      border: none;
+      border-top: 1px solid var(--border2);
+      margin: 0;
+    }
+
+    /* ---- INFO CARDS ---- */
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.5px;
+      margin-bottom: 4rem;
+      background: var(--border2);
+    }
+
+    .info-card {
+      background: var(--panel);
+      padding: 2.5rem 2rem;
+      transition: background 0.2s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .info-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0;
+      width: 3px;
+      height: 0;
+      background: var(--green);
+      transition: height 0.3s;
+    }
+
+    .info-card:hover::before { height: 100%; }
+    .info-card:hover { background: var(--panel2); }
+
+    .info-icon {
+      font-size: 32px;
+      margin-bottom: 1rem;
+      display: block;
+    }
+
+    .info-card h3 {
+      font-family: var(--pixel);
+      font-size: 9px;
+      color: var(--green);
+      margin-bottom: 0.8rem;
+      letter-spacing: 1px;
+    }
+
+    .info-card p {
+      color: var(--text2);
+      font-size: 15px;
+      line-height: 1.6;
+    }
+
+    /* ---- STATS ---- */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1px;
+      background: var(--border2);
+      margin: 3rem 0;
+    }
+
+    .stat-box {
+      background: var(--bg2);
+      padding: 2rem 1.5rem;
+      text-align: center;
+    }
+
+    .stat-number {
+      font-family: var(--pixel);
+      font-size: 24px;
+      color: var(--green);
+      display: block;
+      text-shadow: 0 0 10px rgba(57,255,20,0.5);
+    }
+
+    .stat-label {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--text3);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-top: 0.5rem;
+      display: block;
+    }
+
+    /* ---- LEADERBOARD ---- */
+    #leaderboard-section {
+      background: var(--bg2);
+      border-top: 1px solid var(--border2);
+      border-bottom: 1px solid var(--border2);
+    }
+
+    .leaderboard-wrap {
+      max-width: 700px;
+    }
+
+    .lb-header {
+      display: grid;
+      grid-template-columns: 60px 1fr 1fr;
+      padding: 0.8rem 1.5rem;
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--text3);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      border-bottom: 1px solid var(--border2);
+    }
+
+    .lb-row {
+      display: grid;
+      grid-template-columns: 60px 1fr 1fr;
+      padding: 1rem 1.5rem;
+      border-bottom: 1px solid var(--border2);
+      align-items: center;
+      transition: background 0.15s;
+    }
+
+    .lb-row:hover { background: var(--panel); }
+
+    .lb-rank {
+      font-family: var(--pixel);
+      font-size: 9px;
+    }
+
+    .lb-row:nth-child(1) .lb-rank { color: #ffd700; text-shadow: 0 0 8px rgba(255,215,0,0.5); }
+    .lb-row:nth-child(2) .lb-rank { color: #c0c0c0; }
+    .lb-row:nth-child(3) .lb-rank { color: #cd7f32; }
+    .lb-row:nth-child(n+4) .lb-rank { color: var(--text3); }
+
+    .lb-player {
+      font-family: var(--mono);
+      font-size: 14px;
+      color: var(--text);
+    }
+
+    .lb-score {
+      font-family: var(--pixel);
+      font-size: 11px;
+      color: var(--green);
+      text-align: right;
+      text-shadow: 0 0 6px rgba(57,255,20,0.3);
+    }
+
+    .lb-empty {
+      padding: 3rem 1.5rem;
+      font-family: var(--mono);
+      color: var(--text3);
+      font-size: 13px;
+    }
+
+    /* ---- AUTH PANELS ---- */
+    .auth-section {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5px;
+      background: var(--border2);
+      margin-bottom: 4rem;
+    }
+
+    .auth-panel {
+      background: var(--panel);
+      padding: 3rem 2.5rem;
+    }
+
+    .auth-title {
+      font-family: var(--pixel);
+      font-size: 11px;
+      color: var(--green);
+      margin-bottom: 2rem;
+      letter-spacing: 1px;
+    }
+
+    .form-group {
+      margin-bottom: 1.5rem;
+    }
+
+    .form-group label {
+      display: block;
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--text3);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+    }
+
+    .form-group input {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 14px;
+      padding: 12px 14px;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .form-group input:focus {
+      border-color: var(--green3);
+      box-shadow: 0 0 0 2px rgba(57,255,20,0.08);
+    }
+
+    .form-submit {
+      font-family: var(--pixel);
+      font-size: 9px;
+      background: var(--green);
+      color: #000;
+      border: none;
+      padding: 13px 28px;
+      cursor: pointer;
+      letter-spacing: 1px;
+      width: 100%;
+      margin-top: 0.5rem;
+      transition: all 0.15s;
+    }
+
+    .form-submit:hover {
+      background: #fff;
+      box-shadow: 0 4px 20px rgba(57,255,20,0.4);
+    }
+
+    .alert {
+      padding: 1rem 1.2rem;
+      margin-bottom: 1.5rem;
+      font-family: var(--mono);
+      font-size: 12px;
+      letter-spacing: 1px;
+    }
+
+    .alert-error {
+      background: rgba(255,58,58,0.08);
+      border: 1px solid rgba(255,58,58,0.3);
+      color: var(--red);
+    }
+
+    .alert-success {
+      background: rgba(57,255,20,0.05);
+      border: 1px solid rgba(57,255,20,0.2);
+      color: var(--green2);
+    }
+
+    .logged-in-box {
+      background: var(--panel);
+      padding: 2.5rem;
+      border: 1px solid var(--green3);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .logged-in-box::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--green), transparent);
+    }
+
+    .logged-in-box h3 {
+      font-family: var(--pixel);
+      font-size: 11px;
+      color: var(--green);
+      margin-bottom: 1rem;
+    }
+
+    .logged-in-box p {
+      font-family: var(--mono);
+      font-size: 14px;
+      color: var(--text2);
+      margin-bottom: 1.5rem;
+    }
+
+    /* ---- DIAGRAMS ---- */
+    #diagrams {
+      background: var(--bg2);
+    }
+
+    .diagram-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 3rem;
+    }
+
+    .diagram-card {
+      background: var(--panel);
+      padding: 2rem;
+      border: 1px solid var(--border2);
+    }
+
+    .diagram-card h3 {
+      font-family: var(--pixel);
+      font-size: 9px;
+      color: var(--green);
+      margin-bottom: 1.5rem;
+      letter-spacing: 1px;
+    }
+
+    .diagram-card img {
+      width: 100%;
+      height: auto;
+      display: block;
+      image-rendering: crisp-edges;
+      border: 1px solid var(--border);
+    }
+
+    .diagram-desc {
+      margin-top: 1rem;
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--text3);
+      line-height: 1.6;
+    }
+
+    /* ---- DOCS ---- */
+    .docs-layout {
+      display: grid;
+      grid-template-columns: 240px 1fr;
+      gap: 3rem;
+      align-items: start;
+    }
+
+    .docs-nav {
+      position: sticky;
+      top: 80px;
+      background: var(--panel);
+      border: 1px solid var(--border2);
+      padding: 1.5rem;
+    }
+
+    .docs-nav h4 {
+      font-family: var(--pixel);
+      font-size: 8px;
+      color: var(--text3);
+      letter-spacing: 2px;
+      margin-bottom: 1rem;
+    }
+
+    .docs-nav ul {
+      list-style: none;
+    }
+
+    .docs-nav li a {
+      display: block;
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--text2);
+      text-decoration: none;
+      padding: 6px 0;
+      border-bottom: 1px solid var(--border2);
+      transition: color 0.2s, padding-left 0.2s;
+      letter-spacing: 0.5px;
+    }
+
+    .docs-nav li a:hover {
+      color: var(--green);
+      padding-left: 8px;
+    }
+
+    .docs-content h2 {
+      font-family: var(--pixel);
+      font-size: 13px;
+      color: var(--green);
+      margin: 3rem 0 1rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--border2);
+    }
+
+    .docs-content h2:first-child {
+      margin-top: 0;
+      border-top: none;
+    }
+
+    .docs-content h3 {
+      font-family: var(--mono);
+      font-size: 15px;
+      color: var(--amber);
+      margin: 1.5rem 0 0.8rem;
+      letter-spacing: 1px;
+    }
+
+    .docs-content p {
+      color: var(--text2);
+      margin-bottom: 1rem;
+      font-size: 16px;
+    }
+
+    .docs-content ul, .docs-content ol {
+      color: var(--text2);
+      padding-left: 1.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .docs-content li {
+      margin-bottom: 0.4rem;
+      font-size: 15px;
+    }
+
+    .code-block {
+      background: #050a05;
+      border: 1px solid var(--border2);
+      border-left: 3px solid var(--green3);
+      padding: 1.2rem 1.5rem;
+      font-family: var(--mono);
+      font-size: 13px;
+      color: var(--green2);
+      margin: 1rem 0;
+      overflow-x: auto;
+      white-space: pre;
+    }
+
+    .tag {
+      display: inline-block;
+      font-family: var(--mono);
+      font-size: 11px;
+      padding: 2px 10px;
+      margin: 2px;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      color: var(--green3);
+    }
+
+    /* ---- HOW TO PLAY ---- */
+    .controls-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1.5px;
+      background: var(--border2);
+      margin: 2rem 0;
+    }
+
+    .control-item {
+      background: var(--panel);
+      padding: 2rem 1.5rem;
+      text-align: center;
+    }
+
+    .key-icon {
+      display: inline-block;
+      font-family: var(--pixel);
+      font-size: 12px;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-bottom: 3px solid var(--border);
+      padding: 8px 16px;
+      color: var(--text);
+      margin-bottom: 1rem;
+    }
+
+    .control-label {
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--text2);
+      letter-spacing: 1px;
+    }
+
+    /* ---- FOOTER ---- */
+    footer {
+      background: var(--bg2);
+      border-top: 1px solid var(--border2);
+      padding: 3rem 2rem;
+      text-align: center;
+    }
+
+    .footer-logo {
+      font-family: var(--pixel);
+      font-size: 10px;
+      color: var(--green3);
+      margin-bottom: 1rem;
+    }
+
+    .footer-text {
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--text3);
+      letter-spacing: 1px;
+    }
+
+    /* ---- TABS ---- */
+    .tabs {
+      display: flex;
+      gap: 0;
+      margin-bottom: 0;
+      border-bottom: 1px solid var(--border2);
+    }
+
+    .tab-btn {
+      font-family: var(--pixel);
+      font-size: 8px;
+      background: transparent;
+      color: var(--text3);
+      border: none;
+      border-bottom: 2px solid transparent;
+      padding: 12px 20px;
+      cursor: pointer;
+      letter-spacing: 1px;
+      transition: all 0.2s;
+    }
+
+    .tab-btn.active {
+      color: var(--green);
+      border-bottom-color: var(--green);
+    }
+
+    .tab-btn:hover:not(.active) {
+      color: var(--text2);
+    }
+
+    .tab-content {
+      display: none;
+      padding: 2rem 0 0;
+    }
+
+    .tab-content.active { display: block; }
+
+    /* ---- MOBILE ---- */
+    @media (max-width: 768px) {
+      .auth-section { grid-template-columns: 1fr; }
+      .diagram-grid { grid-template-columns: 1fr; }
+      .docs-layout { grid-template-columns: 1fr; }
+      .docs-nav { position: static; }
+      .stats-row { grid-template-columns: 2fr 2fr; }
+      nav .nav-links { display: none; }
+    }
+
+    /* ---- GLITCH ---- */
+    .glitch {
+      position: relative;
+    }
+    .glitch::before, .glitch::after {
+      content: attr(data-text);
+      position: absolute;
+      top: 0; left: 0;
+      font-family: var(--pixel);
+      font-size: inherit;
+      width: 100%;
+    }
+    .glitch::before {
+      color: #0ff;
+      animation: glitch1 3s infinite;
+      clip-path: polygon(0 20%, 100% 20%, 100% 40%, 0 40%);
+    }
+    .glitch::after {
+      color: var(--red);
+      animation: glitch2 3s infinite;
+      clip-path: polygon(0 60%, 100% 60%, 100% 80%, 0 80%);
+    }
+    @keyframes glitch1 {
+      0%, 85%, 100% { transform: none; opacity: 0; }
+      86% { transform: translateX(-3px); opacity: 0.8; }
+      89% { transform: translateX(3px); opacity: 0.8; }
+      92% { transform: none; opacity: 0; }
+    }
+    @keyframes glitch2 {
+      0%, 80%, 100% { transform: none; opacity: 0; }
+      81% { transform: translateX(4px); opacity: 0.6; }
+      84% { transform: translateX(-4px); opacity: 0.6; }
+      87% { transform: none; opacity: 0; }
+    }
+
+    .highlight { color: var(--green); }
+    .highlight-amber { color: var(--amber); }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">🦕 DINNOBIRD</div>
+  <ul class="nav-links">
+    <li><a href="#hero">Home</a></li>
+    <li><a href="#about">O hře</a></li>
+    <li><a href="#leaderboard-section">Skóre</a></li>
+    <li><a href="#auth-section">Účet</a></li>
+    <li><a href="#diagrams">Diagramy</a></li>
+    <li><a href="#docs">Dokumentace</a></li>
+  </ul>
+  <div class="nav-user">
+    {% if username %}
+      <span>👤 {{ username }}</span>
+      <a href="/logout">Odhlásit se</a>
+    {% else %}
+      <span>nepřihlášen</span>
+    {% endif %}
+  </div>
+</nav>
+
+<!-- HERO -->
+<div id="hero">
+  <div class="hero-grid"></div>
+  <div class="hero-glow"></div>
+  <div class="hero-content">
+    <span class="hero-badge">// pygame projekt 2025</span>
+    <span class="pixel-bird">🦕</span>
+    <h1 class="hero-title glitch" data-text="DINNOBIRD">DINNOBIRD</h1>
+    <p class="hero-sub">Flappy Dino &nbsp;·&nbsp; Přežij pilíře &nbsp;·&nbsp; Překonej svůj rekord</p>
+    <div class="btn-group">
+      <a href="#about" class="btn-primary">Zjistit více</a>
+      <a href="#auth-section" class="btn-secondary">
+        {% if username %}Přejít na skóre{% else %}Přihlásit se{% endif %}
+      </a>
+    </div>
+  </div>
+  <div class="scroll-hint">↓ SCROLL ↓</div>
+</div>
+
+<hr class="divider">
+
+<!-- ABOUT -->
+<section id="about">
+  <div class="section-label">// o hře</div>
+  <h2 class="section-title">Co je DinnoBird?</h2>
+
+  <div class="info-grid">
+    <div class="info-card">
+      <span class="info-icon">🎮</span>
+      <h3>Gameplay</h3>
+      <p>DinnoBird je 2D arcade hra inspirovaná klasickým Flappy Bird. Ovládáš dinosauřího ptáka, který musí proletět mezerami mezi kamennými pilíři v džungli. Každým průletem získáváš bod — jak daleko se dostaneš?</p>
+    </div>
+    <div class="info-card">
+      <span class="info-icon">🏆</span>
+      <h3>Soutěžení</h3>
+      <p>Výsledky jsou uloženy do sdílené databáze. Po každé hře se tvoje nejlepší skóre automaticky zapíše a zobrazí v globálním žebříčku. Registruj se a přidej se do souboje o první místo!</p>
+    </div>
+    <div class="info-card">
+      <span class="info-icon">🌿</span>
+      <h3>Grafika a zvuk</h3>
+      <p>Hra používá vlastní sprite ptáka, džunglové pozadí a kamenné pilíře. Doprovází ji atmosférická melodie od Sigur Rós, která dotváří tajemnou náladu pralesního dobrodružství.</p>
+    </div>
+    <div class="info-card">
+      <span class="info-icon">⚡</span>
+      <h3>Obtížnost</h3>
+      <p>Hra se postupně zrychluje — každý průlet přidává k rychlosti pilířů. Čím vyšší skóre, tím menší prostor pro chybu. Reflexy jsou klíčem k přežití v DinnoBird!</p>
+    </div>
+    <div class="info-card">
+      <span class="info-icon">🔗</span>
+      <h3>Web integrace</h3>
+      <p>Hra a webová stránka sdílejí jednu SQLite databázi. Z menu ve hře lze přímo otevřít web, registrovat se, přihlásit — a teprve pak hrát. Web zobrazuje živý žebříček i výsledky z minulých sezení.</p>
+    </div>
+    <div class="info-card">
+      <span class="info-icon">🛠️</span>
+      <h3>Technologie</h3>
+      <p>Hra je napsána v <span class="highlight">Python + Pygame</span>. Backend webu běží na <span class="highlight">Flask</span>. Data jsou persistována v <span class="highlight">SQLite</span>. Frontend využívá čistý HTML/CSS/JS bez externích frameworků.</p>
+    </div>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat-box">
+      <span class="stat-number">60</span>
+      <span class="stat-label">FPS</span>
+    </div>
+    <div class="stat-box">
+      <span class="stat-number">128px</span>
+      <span class="stat-label">Velikost ptáka</span>
+    </div>
+    <div class="stat-box">
+      <span class="stat-number">0.45</span>
+      <span class="stat-label">Gravitace</span>
+    </div>
+    <div class="stat-box">
+      <span class="stat-number">∞</span>
+      <span class="stat-label">Generování pilířů</span>
+    </div>
+  </div>
+
+  <div class="section-label" style="margin-top:3rem;">// ovládání</div>
+  <h3 class="section-title" style="font-size:13px;">Jak hrát</h3>
+
+  <div class="controls-grid">
+    <div class="control-item">
+      <div class="key-icon">SPACE</div>
+      <div class="control-label">Mávnutí křídly / Skok</div>
+    </div>
+    <div class="control-item">
+      <div class="key-icon">R</div>
+      <div class="control-label">Restart po prohře</div>
+    </div>
+    <div class="control-item">
+      <div class="key-icon">ESC</div>
+      <div class="control-label">Menu / Zpět</div>
+    </div>
+    <div class="control-item">
+      <div class="key-icon">M</div>
+      <div class="control-label">Ztlumit hudbu</div>
+    </div>
+    <div class="control-item">
+      <div class="key-icon">F</div>
+      <div class="control-label">Celá obrazovka</div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- LEADERBOARD -->
+<section id="leaderboard-section" class="full-width">
+  <div class="section-inner">
+    <div class="section-label">// žebříček</div>
+    <h2 class="section-title">Nejlepší hráči</h2>
+
+    <div class="leaderboard-wrap">
+      <div class="lb-header">
+        <span>Místo</span>
+        <span>Hráč</span>
+        <span style="text-align:right;">Skóre</span>
+      </div>
+
+      {% if scores %}
+        {% for player, score in scores %}
+        <div class="lb-row">
+          <span class="lb-rank">
+            {% if loop.index == 1 %}🥇
+            {% elif loop.index == 2 %}🥈
+            {% elif loop.index == 3 %}🥉
+            {% else %}#{{ loop.index }}
+            {% endif %}
+          </span>
+          <span class="lb-player">{{ player }}</span>
+          <span class="lb-score">{{ score }} pts</span>
+        </div>
+        {% endfor %}
+      {% else %}
+        <div class="lb-empty">Žádné výsledky. Buď první, kdo zaznamená skóre!</div>
+      {% endif %}
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- AUTH -->
+<section id="auth-section">
+  <div class="section-label">// přihlášení / registrace</div>
+  <h2 class="section-title">Účet hráče</h2>
+
+  {% if error %}
+  <div class="alert alert-error">⚠ {{ error }}</div>
+  {% endif %}
+
+  {% if username %}
+  <!-- Logged in state -->
+  <div class="logged-in-box">
+    <h3>✅ Přihlášen jako: {{ username }}</h3>
+    <p>Jsi připraven spustit hru. Ujisti se, že Flask server běží na <span class="highlight">127.0.0.1:5000</span> a spusť soubor <code style="font-family:var(--mono); color: var(--amber);">HororBird.py</code>. V menu hry zadej své uživatelské jméno — <span class="highlight">{{ username }}</span> — a začni hrát!</p>
+    <a href="/logout" class="btn-secondary" style="font-size:9px; padding: 10px 20px;">Odhlásit se</a>
+  </div>
+  {% else %}
+  <div class="auth-section">
+    <!-- Login -->
+    <div class="auth-panel">
+      <div class="auth-title">🔑 Přihlášení</div>
+      <form action="/auth" method="POST">
+        <input type="hidden" name="mode" value="login">
+        <div class="form-group">
+          <label for="login-username">Uživatelské jméno</label>
+          <input type="text" id="login-username" name="username" placeholder="tvoje_jméno" autocomplete="username" required>
+        </div>
+        <div class="form-group">
+          <label for="login-password">Heslo</label>
+          <input type="password" id="login-password" name="password" placeholder="••••••••" autocomplete="current-password" required>
+        </div>
+        <button type="submit" class="form-submit">Přihlásit se</button>
+      </form>
+      <p style="margin-top:1.2rem; font-family:var(--mono); font-size:12px; color:var(--text3);">
+        Po přihlášení na web zadej stejné jméno do hry a tvoje skóre se bude ukládat do žebříčku.
+      </p>
+    </div>
+
+    <!-- Register -->
+    <div class="auth-panel" style="border-left: 1.5px solid var(--border2);">
+      <div class="auth-title">🆕 Registrace</div>
+      <form action="/auth" method="POST">
+        <input type="hidden" name="mode" value="register">
+        <div class="form-group">
+          <label for="reg-username">Uživatelské jméno</label>
+          <input type="text" id="reg-username" name="username" placeholder="tvoje_jméno" autocomplete="username" required>
+        </div>
+        <div class="form-group">
+          <label for="reg-password">Heslo</label>
+          <input type="password" id="reg-password" name="password" placeholder="zvol silné heslo" autocomplete="new-password" required>
+        </div>
+        <button type="submit" class="form-submit">Zaregistrovat se</button>
+      </form>
+      <p style="margin-top:1.2rem; font-family:var(--mono); font-size:12px; color:var(--text3);">
+        Registrace ti umožní hrát hru. Přihlášení na webu není nutné pro hru — stačí existovat v databázi.
+      </p>
+    </div>
+  </div>
+  {% endif %}
+</section>
+
+<hr class="divider">
+
+<!-- DIAGRAMS -->
+<section id="diagrams" class="full-width">
+  <div class="section-inner">
+    <div class="section-label">// diagramy</div>
+    <h2 class="section-title">Vývojový a ER diagram</h2>
+
+    <div class="diagram-grid">
+      <div class="diagram-card">
+        <h3>📊 Vývojový diagram</h3>
+        <img src="/static/diagram1.png" alt="Vývojový diagram hry DinnoBird" loading="lazy">
+        <p class="diagram-desc">Vývojový diagram zobrazuje tok řízení hry — od startu přes klik uživatele, stoupání a pád ptáka až po detekci kolize a konec hry (KONEC HRY) nebo pokračování (POKRAČUJ).</p>
+      </div>
+      <div class="diagram-card">
+        <h3>🗄️ ER Diagram databáze</h3>
+        <img src="/static/diagram2.png" alt="ER diagram databáze DinnoBird" loading="lazy">
+        <p class="diagram-desc">ER diagram znázorňuje strukturu databáze se dvěma entitami: <span class="highlight">User</span> (unikátní ID, jméno, heslo, datum vytvoření) a <span class="highlight">Score</span> (skóre ID, cizí klíč na uživatele, jméno hráče, bodové skóre a datum hraní). Entita User je propojena s Score přes cizí klíč User_ID.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- DOCS -->
+<section id="docs">
+  <div class="section-label">// dokumentace</div>
+  <h2 class="section-title">Jak jsem postupoval při vytváření hry</h2>
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="showTab('tab-overview')">Přehled</button>
+    <button class="tab-btn" onclick="showTab('tab-architecture')">Architektura</button>
+    <button class="tab-btn" onclick="showTab('tab-gameplay')">Gameplay</button>
+    <button class="tab-btn" onclick="showTab('tab-database')">Databáze</button>
+    <button class="tab-btn" onclick="showTab('tab-web')">Webový server</button>
+    <button class="tab-btn" onclick="showTab('tab-tech')">Technologie</button>
+  </div>
+
+  <!-- TAB: OVERVIEW -->
+  <div id="tab-overview" class="tab-content active">
+    <div class="docs-layout">
+      <div class="docs-nav">
+        <h4>Obsah</h4>
+        <ul>
+          <li><a href="#" onclick="showTab('tab-overview'); return false;">Úvod & cíl</a></li>
+          <li><a href="#" onclick="showTab('tab-architecture'); return false;">Architektura</a></li>
+          <li><a href="#" onclick="showTab('tab-gameplay'); return false;">Herní smyčka</a></li>
+          <li><a href="#" onclick="showTab('tab-database'); return false;">Databáze</a></li>
+          <li><a href="#" onclick="showTab('tab-web'); return false;">Flask web</a></li>
+          <li><a href="#" onclick="showTab('tab-tech'); return false;">Tech stack</a></li>
+        </ul>
+      </div>
+      <div class="docs-content">
+        <h2>Úvod a cíl projektu</h2>
+        <p>DinnoBird je školní projekt, jehož cílem bylo vytvořit plnohodnotnou 2D arcade hru s persistencí dat a webovým rozhraním. Inspirací byl kultovní Flappy Bird, avšak s vlastní tematikou džungle a dinosaurů.</p>
+
+        <h3>Požadavky projektu</h3>
+        <ul>
+          <li>Funkční 2D hra s fyzikou (gravitace, kolize)</li>
+          <li>Ukládání a zobrazování skóre v databázi</li>
+          <li>Systém přihlášení a registrace uživatelů</li>
+          <li>Webový žebříček propojený s hrou</li>
+          <li>Vlastní grafické prostředky (sprity, pozadí)</li>
+          <li>Hudební doprovod</li>
+        </ul>
+
+        <h3>Postup vývoje</h3>
+        <p>Vývoj probíhal ve třech fázích:</p>
+        <ol>
+          <li><span class="highlight">Fáze 1 – Herní jádro:</span> Implementace fyziky ptáka, generování pilířů, detekce kolizí a herní smyčky v Pygame.</li>
+          <li><span class="highlight">Fáze 2 – Databáze a autentizace:</span> Návrh SQLite schématu, implementace hash hesel (SHA-256), propojení hry s DB přes modul <code style="font-family:var(--mono); color:var(--green2);">db.py</code>.</li>
+          <li><span class="highlight">Fáze 3 – Webový server:</span> Vytvoření Flask aplikace s routami pro přihlášení, registraci, žebříček a propojení s databází hry.</li>
+        </ol>
+
+        <h3>Autor</h3>
+        <p>Projekt vytvořil <span class="highlight">Toby</span> jako součást výuky programování. Veškerý kód je vlastní tvorba s výjimkou herního enginu Pygame a webového frameworku Flask.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB: ARCHITECTURE -->
+  <div id="tab-architecture" class="tab-content">
+    <div class="docs-content">
+      <h2>Architektura projektu</h2>
+      <p>Projekt se skládá ze tří vzájemně propojených částí, které sdílejí jednu SQLite databázi:</p>
+
+      <div class="code-block">dinnobird/
+├── HororBird.py      # Hlavní soubor hry (Pygame)
+├── db.py             # Databázový modul (sdílený)
+├── app.py            # Flask webový server
+├── dinnobird.db      # SQLite databáze
+├── templates/
+│   └── index.html    # HTML šablona webu
+├── static/
+│   ├── diagram1.png
+│   └── diagram2.png
+└── imgs/
+    ├── Bird.png
+    ├── Džungle.png
+    ├── Pilíř2.png
+    ├── MenuTitle.png
+    └── Konec.png</div>
+
+      <h3>Komunikace mezi komponentami</h3>
+      <p>Hra (HororBird.py) a Flask server (app.py) oba importují modul <code style="font-family:var(--mono); color:var(--amber);">db.py</code>, který poskytuje funkce pro přístup k databázi. Tím je zaručena konzistence dat — skóre uložené hrou je ihned viditelné na webu.</p>
+
+      <h3>Spuštění projektu</h3>
+      <div class="code-block"># 1. Spustit webový server
+python app.py
+
+# 2. V druhém terminálu spustit hru
+python HororBird.py
+
+# Web server automaticky otevře prohlížeč na:
+# http://127.0.0.1:5000</div>
+
+      <p>Hra při startu menu zkontroluje, zda Flask server běží. Tlačítko „Website" v menu hry otevře web pouze tehdy, pokud server odpovídá na <span class="highlight">127.0.0.1:5000</span>.</p>
+    </div>
+  </div>
+
+  <!-- TAB: GAMEPLAY -->
+  <div id="tab-gameplay" class="tab-content">
+    <div class="docs-content">
+      <h2>Herní smyčka a fyzika</h2>
+
+      <h3>Třída Bird</h3>
+      <p>Pták je reprezentován třídou s pozicí (x, y) a vertikální rychlostí (vy). Gravitace se přičítá každý frame, mávnutí nastaví zápornou rychlost (skok nahoru):</p>
+      <div class="code-block">GRAVITY = 0.45        # Gravitační zrychlení
+FLAP_STRENGTH = -9.5  # Rychlost při mávnutí
+
+# Každý frame:
+bird.vy += GRAVITY
+bird.y  += bird.vy
+
+# Při stisku SPACE:
+bird.vy = FLAP_STRENGTH</div>
+
+      <h3>Generování pilířů</h3>
+      <p>Pilíře jsou generovány procedurálně. Výška horního pilíře se mění o náhodnou hodnotu v rozsahu ±MAX_HEIGHT_DIFF oproti předchozímu, čímž vzniká plynulý, ale nepředvídatelný průjezd:</p>
+      <div class="code-block">MAX_HEIGHT_DIFF = 120      # Max. změna výšky
+MIN_GAP_RATIO = 0.25      # Min. mezera (25% výšky obrazovky)
+BASE_SPEED = 3.4          # Základní rychlost
+SPEED_INCREMENT = 0.18    # Zrychlení za každý bod</div>
+
+      <h3>Detekce kolizí</h3>
+      <p>Hra používá pygame Rect kolize — po každém frame se zkontroluje, zda obdélník ptáka protíná obdélník libovolného pilíře nebo hranice obrazovky. Pokud ano, nastane „game over".</p>
+
+      <h3>Bodování</h3>
+      <p>Bod se přičte, jakmile střed pilíře přejde za střed ptáka. Po každém bodu se speed zvýší o SPEED_INCREMENT, čímž hra postupně zrychluje.</p>
+
+      <h3>Countdown</h3>
+      <p>Před každou hrou (i po restartu) proběhne 4sekundový countdown (3, 2, 1, GO!). Během odpočtu pilíře i pták jsou vykresleny, ale fyzika ještě neprobíhá — hráč má čas se připravit.</p>
+    </div>
+  </div>
+
+  <!-- TAB: DATABASE -->
+  <div id="tab-database" class="tab-content">
+    <div class="docs-content">
+      <h2>Databáze a autentizace</h2>
+
+      <h3>Schéma databáze</h3>
+      <div class="code-block">-- Tabulka uživatelů
+CREATE TABLE users (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    username      TEXT UNIQUE NOT NULL,
+    password_hash TEXT NOT NULL
+);
+
+-- Tabulka skóre (jedno nejlepší skóre na hráče)
+CREATE TABLE scores (
+    id     INTEGER PRIMARY KEY AUTOINCREMENT,
+    player TEXT NOT NULL UNIQUE,
+    score  INTEGER NOT NULL
+);
+
+-- Unikátní index pro rychlé vyhledávání
+CREATE UNIQUE INDEX idx_scores_player ON scores (player);</div>
+
+      <h3>Hashování hesel</h3>
+      <p>Hesla nejsou ukládána v čitelné podobě. Při registraci i přihlášení se použije SHA-256 hash:</p>
+      <div class="code-block">import hashlib
+
+def hash_password(password):
+    return hashlib.sha256(
+        password.encode('utf-8')
+    ).hexdigest()</div>
+
+      <h3>Ukládání skóre</h3>
+      <p>Po každém konci hry se zkontroluje, zda hráč již má záznam. Pokud ano, skóre se aktualizuje pouze tehdy, je-li nové vyšší než stávající:</p>
+      <div class="code-block">existing = db.execute(
+    "SELECT score FROM scores WHERE player = ?",
+    (player,)
+).fetchone()
+
+if existing is None:
+    db.execute("INSERT INTO scores ...", ...)
+elif new_score > existing[0]:
+    db.execute("UPDATE scores SET score = ? ...", ...)</div>
+
+      <h3>Propojení hry s DB</h3>
+      <p>Hra při spuštění volá <span class="highlight">init_db()</span> z modulu db.py, který vytvoří tabulky (pokud neexistují) a odstraní případné duplicity. Funkce <span class="highlight">is_registered_user()</span> slouží jako ochrana — do hry se dostane pouze hráč, který existuje v databázi (tj. zaregistroval se přes web).</p>
+
+      <h3>Aktuální hráči v databázi</h3>
+      <div style="display:flex; gap:1rem; flex-wrap:wrap; margin:1rem 0;">
+        <span class="tag">toby</span>
+        <span class="tag">anna</span>
+        <span class="tag">chikitas</span>
+        <span class="tag">klara</span>
+        <span class="tag">hroch</span>
+        <span class="tag">honzik</span>
+        <span class="tag">gulo</span>
+        <span class="tag">anulka</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB: WEB -->
+  <div id="tab-web" class="tab-content">
+    <div class="docs-content">
+      <h2>Webový server (Flask)</h2>
+
+      <h3>Routy</h3>
+      <p>Flask aplikace (app.py) implementuje tyto HTTP endpointy:</p>
+      <div class="code-block">GET  /              → Hlavní stránka (žebříček, login/registrace)
+POST /auth          → Přihlášení nebo registrace uživatele
+GET  /logout        → Odhlášení (smazání session)
+GET  /scores.json   → API endpoint – vrací JSON se skóre</div>
+
+      <h3>Správa session</h3>
+      <p>Po úspěšném přihlášení se uloží jméno uživatele do Flask session. Session je šifrována tajným klíčem (secret_key) uloženým v paměti serveru:</p>
+      <div class="code-block">app.secret_key = 'supersecret_localhost_1234'
+# ⚠ Pro produkci použij náhodný bezpečný klíč!
+
+# Přihlášení:
+session['username'] = username
+
+# Odhlášení:
+session.pop('username', None)</div>
+
+      <h3>Renderování šablony</h3>
+      <p>Flask předává šabloně seznam skóre (načtený z DB), přihlášené uživatelské jméno a případnou chybovou zprávu. Jinja2 šablona pak tyto data dynamicky zobrazí:</p>
+      <div class="code-block">return render_template("index.html",
+    scores=get_scores(),
+    username=session.get('username'),
+    error=request.args.get('error')
+)</div>
+
+      <h3>JSON API</h3>
+      <p>Endpoint <span class="highlight">/scores.json</span> vrací aktuální skóre ve formátu JSON — lze jej využít pro budoucí AJAX aktualizace žebříčku bez nutnosti načítat celou stránku:</p>
+      <div class="code-block">// Příklad odpovědi:
+[
+  {"player": "honzik", "score": 100},
+  {"player": "hroch",  "score": 70},
+  {"player": "toby",   "score": 62}
+]</div>
+
+      <h3>Automatické otevření prohlížeče</h3>
+      <p>Při spuštění app.py se automaticky otevře prohlížeč díky modulu webbrowser — uživatel nemusí ručně zadávat URL do adresního řádku.</p>
+    </div>
+  </div>
+
+  <!-- TAB: TECH -->
+  <div id="tab-tech" class="tab-content">
+    <div class="docs-content">
+      <h2>Použité technologie</h2>
+
+      <h3>Python 3</h3>
+      <p>Celý projekt je napsán v Pythonu 3. Využívá standardní knihovny jako <code style="font-family:var(--mono); color:var(--amber);">hashlib</code>, <code style="font-family:var(--mono); color:var(--amber);">sqlite3</code>, <code style="font-family:var(--mono); color:var(--amber);">webbrowser</code>, <code style="font-family:var(--mono); color:var(--amber);">urllib</code> a <code style="font-family:var(--mono); color:var(--amber);">socket</code>.</p>
+
+      <h3>Pygame</h3>
+      <p>Herní engine pro 2D grafiku, zpracování vstupů a zvuk. Pygame umožňuje vykreslování spriteů, detekci kolizí pomocí Rect a přehrávání MP3 hudby přes pygame.mixer.</p>
+      <div class="code-block">pip install pygame</div>
+
+      <h3>Flask</h3>
+      <p>Lehký Python webový framework. Zpracovává HTTP požadavky, renderuje HTML šablony pomocí Jinja2 a spravuje uživatelské session.</p>
+      <div class="code-block">pip install flask</div>
+
+      <h3>SQLite</h3>
+      <p>Vestavěná databáze v Pythonu — nevyžaduje žádnou instalaci. Ideální pro lokální projekty a prototypy. Databázový soubor <span class="highlight">dinnobird.db</span> je sdílen mezi hrou i webem.</p>
+
+      <h3>HTML / CSS / JavaScript</h3>
+      <p>Frontend webu používá čisté HTML5, CSS3 (custom properties, grid, flexbox, animace) a vanilla JavaScript. Žádné frameworky — vše vlastní kód.</p>
+
+      <h3>Jinja2</h3>
+      <p>Šablonovací systém integrovaný ve Flasku. Umožňuje vkládat Python data (jako seznam skóre nebo jméno uživatele) přímo do HTML pomocí <code style="font-family:var(--mono); color:var(--amber);">{<!-- -->{ }} a {<!-- -->% %}</code> syntaxe.</p>
+
+      <h3>Použité technologie — přehled</h3>
+      <div style="display:flex; gap:0.7rem; flex-wrap:wrap; margin:1.2rem 0;">
+        <span class="tag">Python 3</span>
+        <span class="tag">Pygame</span>
+        <span class="tag">Flask</span>
+        <span class="tag">SQLite3</span>
+        <span class="tag">Jinja2</span>
+        <span class="tag">HTML5</span>
+        <span class="tag">CSS3</span>
+        <span class="tag">JavaScript</span>
+        <span class="tag">SHA-256</span>
+        <span class="tag">webbrowser</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-logo">🦕 DINNOBIRD</div>
+  <p class="footer-text">Školní projekt &nbsp;·&nbsp; Autor: Toby &nbsp;·&nbsp; Python + Pygame + Flask + SQLite</p>
+  <p class="footer-text" style="margin-top:0.5rem; opacity:0.4;">© 2025 — All rights reserved</p>
+</footer>
+
+<script>
+  function showTab(id) {
+    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    const idx = ['tab-overview','tab-architecture','tab-gameplay','tab-database','tab-web','tab-tech'].indexOf(id);
+    document.querySelectorAll('.tab-btn')[idx].classList.add('active');
+  }
+
+  // Live leaderboard refresh every 15s
+  async function refreshLeaderboard() {
+    try {
+      const res = await fetch('/scores.json');
+      const data = await res.json();
+      const wrap = document.querySelector('.leaderboard-wrap');
+      const medals = ['🥇','🥈','🥉'];
+      let html = `<div class="lb-header"><span>Místo</span><span>Hráč</span><span style="text-align:right;">Skóre</span></div>`;
+      if (data.length === 0) {
+        html += `<div class="lb-empty">Žádné výsledky. Buď první!</div>`;
+      } else {
+        data.forEach((row, i) => {
+          const rank = i < 3 ? medals[i] : `#${i+1}`;
+          html += `<div class="lb-row">
+            <span class="lb-rank">${rank}</span>
+            <span class="lb-player">${row.player}</span>
+            <span class="lb-score">${row.score} pts</span>
+          </div>`;
+        });
+      }
+      wrap.innerHTML = html;
+    } catch(e) {}
+  }
+  setInterval(refreshLeaderboard, 15000);
+</script>
+
+</body>
+</html>
