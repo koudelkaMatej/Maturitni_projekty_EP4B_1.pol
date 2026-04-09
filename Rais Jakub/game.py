@@ -5,18 +5,17 @@ import sqlite3
 import os
 from tkinter import messagebox, simpledialog
 
-# Cesta k databázi ve složce skriptu
+# Cesta k databázi – vždy ve stejné složce jako skript
 DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "score.db")
 
 class Minesweeper:
     def __init__(self, root):
         self.root = root
         self.root.title("Hledani min")
-        self.root.attributes('-fullscreen', True)  # fullscreen
-        # Escape ukonci hru
+        self.root.attributes('-fullscreen', True)
         self.root.bind('<Escape>', lambda e: self.ukonci_aplikaci())
 
-        # Scoreboard frame
+        # Panel scoreboard vlevo
         self.scoreboard_frame = tk.Frame(self.root, bg="lightgray")
         self.scoreboard_frame.place(relx=0.01, rely=0.05, relwidth=0.22, relheight=0.9)
         self.scoreboard_label = tk.Label(self.scoreboard_frame, text="Scoreboard", font=("Arial", 30, "bold"), bg="lightgray")
@@ -24,9 +23,11 @@ class Minesweeper:
         self.scoreboard_list = tk.Listbox(self.scoreboard_frame, font=("Arial", 15), width=25)
         self.scoreboard_list.pack(padx=10, pady=10, fill="both", expand=True)
 
-        # SQLite: ulozeni vysledku
+        # Připojení k SQLite databázi
         self.conn = sqlite3.connect(DB_PATH)
         self.cursor = self.conn.cursor()
+
+        # Tabulka výsledků s veškerými info o odehraných hrách
         self.cursor.execute(
             """
             CREATE TABLE IF NOT EXISTS vysledky (
@@ -39,7 +40,8 @@ class Minesweeper:
             )
             """
         )
-        # Tabulka hracu s unikatnim jmenem
+
+        # Tabulka hráčů – jméno je unikátní, jeden hráč = jeden záznam
         self.cursor.execute(
             """
             CREATE TABLE IF NOT EXISTS hraci (
@@ -48,17 +50,19 @@ class Minesweeper:
             )
             """
         )
-        # Pridani sloupce hrac_id do vysledky (pokud jeste neexistuje)
+
+        # Přidání sloupce hrac_id (migrace pro starší verze DB)
         try:
             self.cursor.execute("ALTER TABLE vysledky ADD COLUMN hrac_id INTEGER")
         except sqlite3.OperationalError:
-            pass  # Sloupec jiz existuje
-        # Migrace: presunout existujici jmena do tabulky hraci
+            pass  # Sloupec už existuje, nic se neděje
+
+        # Přesun již existujících jmen hráčů do tabulky hraci
         self.cursor.execute("INSERT OR IGNORE INTO hraci (jmeno) SELECT DISTINCT jmeno FROM vysledky WHERE jmeno IS NOT NULL")
         self.cursor.execute("UPDATE vysledky SET hrac_id = (SELECT id FROM hraci WHERE hraci.jmeno = vysledky.jmeno) WHERE hrac_id IS NULL")
         self.conn.commit()
 
-        # Hlavni menu
+        # Hlavní menu – výběr obtížnosti
         self.menu_frame = tk.Frame(self.root)
         self.menu_frame.pack(expand=True)
 
@@ -87,6 +91,7 @@ class Minesweeper:
     def spust_hru(self, velikost, pocet_min):
         self.menu_frame.pack_forget()
 
+        # Inicializace proměnných pro novou hru
         self.velikost = velikost
         self.pocet_min = pocet_min
         self.prvni_klik = True
@@ -97,7 +102,7 @@ class Minesweeper:
         self.odkryta = 0
         self.spatne_vlajky = 0
 
-        # Statistiky uprostred horni casti
+        # Info panel nahoře – čas a skóre
         self.info_frame = tk.Frame(self.root)
         self.info_frame.place(relx=0.5, rely=0.1, anchor="center")
         self.cas_label = tk.Label(self.info_frame, text="Cas: 0 s", font=("Arial", 16))
@@ -105,10 +110,9 @@ class Minesweeper:
         self.skore_label = tk.Label(self.info_frame, text="Skore: 0", font=("Arial", 16))
         self.skore_label.pack(side="left", padx=20)
 
-        # Hra bezi
         self.hra_bezi = True
 
-        # Umisteni min
+        # Náhodné rozmístění min (bez opakování na stejném poli)
         for _ in range(pocet_min):
             while True:
                 x = random.randint(0, velikost - 1)
@@ -117,7 +121,7 @@ class Minesweeper:
                     self.minova_pole[x][y] = -1
                     break
 
-        # Spocitani cisel okolo min
+        # Počítání čísel – každé pole dostane počet min ve svém okolí
         for i in range(velikost):
             for j in range(velikost):
                 if self.minova_pole[i][j] == -1:
@@ -130,18 +134,17 @@ class Minesweeper:
                                 pocet += 1
                 self.minova_pole[i][j] = pocet
 
-        # Herni plocha
+        # Tvorba herní plochy – tlačítka v gridu
         self.frame = tk.Frame(self.root)
         self.frame.place(relx=0.5, rely=0.5, anchor="center")
 
-        # Dynamické určení velikosti tlačítek podle velikosti okna a pole
+        # Výpočet velikosti tlačítka podle rozlišení obrazovky
         screen_width = self.root.winfo_screenwidth()
         screen_height = self.root.winfo_screenheight()
-        # Rezerva pro horní info panel a okraje
         usable_height = int(screen_height * 0.7)
         usable_width = int(screen_width * 0.7)
         btn_size = min(usable_width // velikost, usable_height // velikost)
-        btn_size = max(20, btn_size)  # minimální velikost tlačítka
+        btn_size = max(20, btn_size)  # minimálně 20px
 
         for i in range(velikost):
             self.frame.grid_rowconfigure(i, weight=1, minsize=btn_size)
@@ -162,10 +165,11 @@ class Minesweeper:
         if not b["state"] == "normal" or self.vlajky[x][y]:
             return
 
-        # Prvni klik safe
+        # Ochrana prvního kliknutí – nelze začít na mině
         if getattr(self, 'prvni_klik', False):
             self.prvni_klik = False
             if self.minova_pole[x][y] == -1:
+                # Přesunutí miny jinam
                 nalezeno = False
                 for i in range(self.velikost):
                     for j in range(self.velikost):
@@ -176,7 +180,7 @@ class Minesweeper:
                             break
                     if nalezeno:
                         break
-                # přepočet 
+                # Přepočet čísel po přesunutí miny
                 for a in range(self.velikost):
                     for b2 in range(self.velikost):
                         if self.minova_pole[a][b2] == -1:
@@ -190,19 +194,23 @@ class Minesweeper:
                         self.minova_pole[a][b2] = pocet
 
         if self.minova_pole[x][y] == -1:
+            # Trefena mina – prohra
             b.config(text="*", bg="red")
             self.konec_hry(vyhra=False)
         else:
             cislo = self.minova_pole[x][y]
+            # Barvy čísel jako v originálním Minesweeperovi
             barvy = {1: "blue", 2: "green", 3: "red", 4: "purple", 5: "maroon", 6: "turquoise", 7: "black", 8: "gray"}
             barva = barvy.get(cislo, "black")
             b.config(text=str(cislo) if cislo > 0 else "", state="disabled", relief=tk.SUNKEN, disabledforeground=barva, fg=barva)
             self.odkryta += 1
+            # Flood fill – prázdné pole automaticky odkryje sousedy
             if cislo == 0:
                 for dx in [-1, 0, 1]:
                     for dy in [-1, 0, 1]:
                         if 0 <= x + dx < self.velikost and 0 <= y + dy < self.velikost:
                             self.odkryj(x + dx, y + dy)
+            # Výhra – odkryta všechna bezpečná pole
             if self.odkryta == self.velikost * self.velikost - self.pocet_min:
                 self.konec_hry(vyhra=True)
 
@@ -214,7 +222,7 @@ class Minesweeper:
             b.config(text="F", fg="red")
             self.vlajky[x][y] = True
             if self.minova_pole[x][y] != -1:
-                self.spatne_vlajky += 1
+                self.spatne_vlajky += 1  # Penalizace za špatnou vlajku
         else:
             b.config(text="", fg="black")
             if self.vlajky[x][y] and self.minova_pole[x][y] != -1:
@@ -224,6 +232,7 @@ class Minesweeper:
     def konec_hry(self, vyhra):
         self.hra_bezi = False
         cas = int(time.time() - self.zacatek)
+        # Výpočet skóre: +10 za pole, -1 za každou sekundu, -5 za špatnou vlajku
         skore = self.odkryta * 10 - cas - self.spatne_vlajky * 5
         skore = max(0, skore)
         vysledek = "Vyhra" if vyhra else "Prohra"
@@ -231,7 +240,8 @@ class Minesweeper:
         jmeno = simpledialog.askstring("Jmeno", "Zadej své jmeno:")
         if not jmeno:
             jmeno = "Neznamy"
-        # Registrace hrace (pokud jeste neexistuje)
+
+        # Uložení hráče (pokud ještě není v DB) a zápis výsledku
         self.cursor.execute("INSERT OR IGNORE INTO hraci (jmeno) VALUES (?)", (jmeno,))
         self.cursor.execute("SELECT id FROM hraci WHERE jmeno = ?", (jmeno,))
         hrac_id = self.cursor.fetchone()[0]
@@ -241,7 +251,7 @@ class Minesweeper:
         )
         self.conn.commit()
         self.aktualizuj_scoreboard()
-        # Nabidni novou hru
+
         chce_znovu = messagebox.askyesno("Hra ukončena", "Zkusit znovu?")
         if chce_znovu:
             self.vynuluj_hraci_plochu()
@@ -249,7 +259,8 @@ class Minesweeper:
         else:
             self.ukonci_aplikaci()
 
-    def vynuluj_hraci_plochu(self): # Vymazání herní plochy kvůli návratu do menu
+    def vynuluj_hraci_plochu(self):
+        # Zničení widgetů herní plochy před návratem do menu
         try:
             if hasattr(self, "frame") and self.frame.winfo_exists():
                 self.frame.destroy()
@@ -262,7 +273,7 @@ class Minesweeper:
             pass
 
     def ukonci_aplikaci(self):
-        # Bezpečné uzavření DB a okna
+        # Zavření DB spojení před ukončením okna
         try:
             if hasattr(self, "conn"):
                 self.conn.commit()
@@ -281,10 +292,12 @@ class Minesweeper:
             self.cas_label.config(text=f"Cas: {cas} s")
         if hasattr(self, "skore_label"):
             self.skore_label.config(text=f"Skore: {skore}")
+        # Opakované volání každých 500ms = živý timer
         if hasattr(self, "frame") and self.frame.winfo_exists():
             self.root.after(500, self.aktualizuj_info)
 
     def aktualizuj_scoreboard(self):
+        # Načtení top 10 výsledků seřazených podle skóre (a při shodě času)
         self.scoreboard_list.delete(0, tk.END)
         self.cursor.execute("SELECT jmeno, skore, cas, obtiznost, vysledek FROM vysledky ORDER BY skore DESC, cas ASC LIMIT 10")
         vysledky = self.cursor.fetchall()

@@ -2,15 +2,13 @@ import os
 import sqlite3
 from flask import Flask, render_template_string, Response, url_for, session, redirect, request
 
-# Konfigurace cesty k databázi
+# Cesta k databázi – stejná složka jako skript
 DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "score.db")
 
 app = Flask(__name__)
 app.secret_key = "minesweeper_secret_key_2026"
 
-# ------------------------------------------------------------------------------
-# 1. CENTRALIZOVANÉ CSS (Design stránek v jednom souboru)
-# ------------------------------------------------------------------------------
+# CSS pro celou aplikaci definované jako string – Flask ho pak servíruje jako soubor
 CSS_CONTENT = """
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -24,7 +22,6 @@ body {
     min-height: 100vh;
 }
 
-/* Navigační lišta */
 nav {
     background-color: #2c3e50;
     overflow: hidden;
@@ -54,7 +51,6 @@ nav .brand {
     font-style: italic;
 }
 
-/* Obsah stránek */
 .container {
     max-width: 900px;
     margin: 30px auto;
@@ -69,7 +65,6 @@ h2 { color: #16a085; margin-top: 20px; }
 p { margin-bottom: 15px; }
 ul { margin-bottom: 20px; }
 
-/* Tabulka Highscore */
 table {
     width: 100%;
     border-collapse: collapse;
@@ -100,7 +95,6 @@ tr.highlight td:first-child {
     color: #1abc9c;
 }
 
-/* Login formulář */
 .login-form {
     max-width: 400px;
     margin: 40px auto;
@@ -139,7 +133,6 @@ tr.highlight td:first-child {
     background-color: #16a085;
 }
 
-/* Stav přihlášení v navigaci */
 nav .user-info {
     float: right;
     padding: 14px 20px;
@@ -155,7 +148,6 @@ nav .user-info a:hover {
     background-color: #c0392b;
 }
 
-/* Legenda */
 .legend {
     margin-top: 15px;
     padding: 10px 15px;
@@ -166,7 +158,6 @@ nav .user-info a:hover {
     color: #2c3e50;
 }
 
-/* Chybová hláška */
 .error-msg {
     background-color: #fdf0f0;
     border-left: 4px solid #e74c3c;
@@ -177,14 +168,13 @@ nav .user-info a:hover {
     font-weight: bold;
 }
 
-/* Patička */
 footer {
     text-align: center;
     padding: 20px;
     background-color: #2c3e50;
     color: #bdc3c7;
     font-size: 0.9em;
-    margin-top: auto; /* Magický trik: Odtlačí patičku úplně na spodek volného místa */
+    margin-top: auto;
 }
 
 .diagram-placeholder {
@@ -200,11 +190,7 @@ footer {
 }
 """
 
-# ------------------------------------------------------------------------------
-# 2. HTML ŠABLONY (Base layout + jednotlivé stránky)
-# ------------------------------------------------------------------------------
-
-# Základní šablona (obsahuje hlavičku, menu a patičku, do které se vkládá obsah)
+# Základní HTML šablona – nav + container + footer, obsah se vkládá přes {{ content }}
 BASE_TEMPLATE = """
 <!DOCTYPE html>
 <html lang="cs">
@@ -243,21 +229,18 @@ BASE_TEMPLATE = """
 </html>
 """
 
-# ------------------------------------------------------------------------------
-# 3. ROUTY (Logika aplikace)
-# ------------------------------------------------------------------------------
+# Routy aplikace
 
 @app.route("/style.css")
 def style():
-    """Slouží CSS soubor dynamicky."""
+    # CSS se servíruje jako soubor přímo z proměnné CSS_CONTENT
     return Response(CSS_CONTENT, mimetype="text/css")
 
 @app.route("/")
 def home():
-    """Hlavní stránka: Základní info + Tabulka výsledků."""
+    # Hlavní stránka – načte top 20 výsledků z DB a zobrazí tabulku
     conn = sqlite3.connect(DB_PATH)
     cur = conn.cursor()
-    # Načtení dat z databáze
     try:
         cur.execute("""
             SELECT h.jmeno, v.skore, v.cas, v.obtiznost, v.vysledek, v.hrac_id
@@ -268,7 +251,7 @@ def home():
         """)
         scores = cur.fetchall()
     except sqlite3.OperationalError:
-        # Fallback pro starší verzi DB bez hraci tabulky
+        # Fallback pro starší DB bez tabulky hraci
         try:
             cur.execute("""
                 SELECT jmeno, skore, cas, obtiznost, vysledek, NULL
@@ -281,11 +264,9 @@ def home():
             scores = []
     conn.close()
 
-    # ID přihlášeného hráče (nebo None)
     logged_player = session.get("player_name", None)
     logged_hrac_id = session.get("hrac_id", None)
 
-    # Vytvoření HTML pro tabulku
     table_html = """
     <h1>Vítejte v Hledání min</h1>
     <p>Toto je webové rozhraní pro maturitní projekt hry Minesweeper. Níže naleznete aktuální žebříček nejlepších hráčů.</p>
@@ -302,9 +283,9 @@ def home():
         </tr>
     """
     for index, row in enumerate(scores, 1):
-        # Zvýraznění řádků přihlášeného hráče podle hrac_id
         jmeno = row[0] if row[0] else "Neznámý"
         row_hrac_id = row[5]
+        # Zvýraznění vlastních výsledků přihlášeného hráče
         row_class = ' class="highlight"' if logged_hrac_id and row_hrac_id == logged_hrac_id else ''
         table_html += f"""
         <tr{row_class}>
@@ -329,12 +310,11 @@ def home():
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
-    """Stránka pro přihlášení hráče."""
+    # Přihlášení podle jména – hráč musí mít alespoň jeden zaznamenaný výsledek
     error = ""
     if request.method == "POST":
         jmeno = request.form.get("jmeno", "").strip()
         if jmeno:
-            # Ověření, že hráč existuje v databázi
             conn = sqlite3.connect(DB_PATH)
             cur = conn.cursor()
             cur.execute("SELECT id FROM hraci WHERE jmeno = ? COLLATE NOCASE", (jmeno,))
@@ -366,7 +346,7 @@ def login():
 
 @app.route("/logout")
 def logout():
-    """Odhlášení hráče."""
+    # Odstranění jména a ID hráče ze session
     session.pop("player_name", None)
     session.pop("hrac_id", None)
     return redirect("/")
@@ -374,7 +354,6 @@ def logout():
 
 @app.route("/o-hre")
 def about_game():
-    """Stránka O hře: Podrobné informace, pravidla a technické specifikace."""
     content = """
     <h1>O hře Minesweeper</h1>
     
@@ -409,7 +388,6 @@ def about_game():
 
 @app.route("/manual")
 def manual():
-    """Stránka Uživatelská příručka."""
     content = """
     <h1>Uživatelská příručka</h1>
     
@@ -453,7 +431,6 @@ def manual():
 
 @app.route("/diagramy")
 def diagrams():
-    """Stránka Vývojové diagramy: Algoritmy mechanik."""
     content = """
     <h1>Vývojové diagramy</h1>
     <p>Zde jsou vizualizovány klíčové algoritmy použité při vývoji hry. <br>
@@ -478,9 +455,9 @@ def diagrams():
     logged_player = session.get("player_name", None)
     return render_template_string(BASE_TEMPLATE, title="Vývojové diagramy", content=content,
                                  logged_in=bool(logged_player), player_name=logged_player)
+
 @app.route("/o-nas")
 def about_us():
-    """Stránka O mně: Informace o tvůrcích."""
     content = """
     <h1>O mně</h1>
     
